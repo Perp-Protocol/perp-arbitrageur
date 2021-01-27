@@ -25,7 +25,7 @@ export class SystemMetadataFactory {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private async getSystemMetadata(): Promise<any> {
-        return await fetch(`https://metadata.perp.exchange/production.json`).then(res => res.json())
+        return await fetch("https://metadata.perp.exchange/production.json").then(res => res.json())
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
