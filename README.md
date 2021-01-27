@@ -26,6 +26,15 @@ See [Arbitrageur.ts](https://github.com/perpetual-protocol/arbitrageur/blob/main
 
 ## Run
 
+You could simply run this bot in your terminal:
+
 ```bash
-$ env $(cat .env.production | grep -v '#' | xargs) npm run arbitrage
+$ npm run arbitrage
+```
+
+Also, you could deploy this bot on AWS Lambda:
+
+```bash
+# Rember to change `AWS_` variables in `.env.production`.
+$ npm run deploy
 ```

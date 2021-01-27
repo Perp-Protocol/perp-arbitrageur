@@ -37,6 +37,6 @@ custom:
 
 functions:
     arbitrageur:
-        handler: build/arbitrageur/src/schedule.handler
+        handler: build/src/schedule.handler
         events:
             - schedule: rate(1 minute)
