@@ -22,19 +22,24 @@ $ npm install
     - `PERP_LEVERAGE`
     - `FTX_USD_BALANCE_WARNING_THRESHOLD`
 
-See [Arbitrageur.ts](https://github.com/perpetual-protocol/arbitrageur/blob/main/src/Arbitrageur.ts) for more details.
+See [src/Arbitrageur.ts](https://github.com/perpetual-protocol/arbitrageur/blob/main/src/Arbitrageur.ts) for more details.
 
 ## Run
 
 You could simply run this bot in your terminal:
 
 ```bash
+$ npm run build
 $ npm run arbitrage
 ```
 
 Also, you could deploy this bot on AWS Lambda:
 
 ```bash
-# Rember to change `AWS_` variables in `.env.production`.
+# You might need to install AWS CLI from https://aws.amazon.com/cli/
+$ aws configure
+
 $ npm run deploy
 ```
+
+See [serverless.yml](https://github.com/perpetual-protocol/arbitrageur/blob/main/serverless.yml) for more details.
