@@ -11,7 +11,7 @@
         "clean": "shx rm -rf ./build ./.serverless ./nyc_output",
         "arbitrage": "env $(cat .env.production | grep -v '#' | xargs) ts-node --files src/index.ts",
         "invoke-local": "sls invoke local --stage production --function arbitrageur",
-        "deploy": "npm run build && env $(cat .env.production | grep -v '#' | xargs) sls deploy --aws-s3-accelerate"
+        "deploy": "npm run build && sls deploy --aws-s3-accelerate --stage production"
     },
     "author": "",
     "license": "ISC",
