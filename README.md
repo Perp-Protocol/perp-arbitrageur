@@ -10,8 +10,8 @@ $ npm install
 
 ## Configuration
 
-- Deposit enough USDC on [Perpetual Protocol Exchange](https://perp.exchange/)
-- Deposit enough USD or Stablecoins in your FTX account
+- Deposit enough USDC to your wallet on [Perpetual Protocol Exchange](https://perp.exchange/)
+- Deposit enough USD or Stablecoins to your account on [FTX](https://ftx.com/)
 - In `.env.production` file, replace the following variables with yours
     - `ARBITRAGEUR_V2_PK`
     - `FTX_API_KEY`
