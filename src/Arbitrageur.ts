@@ -35,57 +35,57 @@ export class Arbitrageur {
     private readonly XDAI_BALANCE_WARNING_THRESHOLD = Big(1)
     private readonly QUOTE_BALANCE_REFILL_THRESHOLD = Big(500)
     private readonly PERP_LEVERAGE = Big(5)
-    private readonly FTX_USD_BALANCE_WARNING_THRESHOLD = Big(0)
+    private readonly FTX_USD_BALANCE_WARNING_THRESHOLD = Big(500)
     private readonly FTX_MARGIN_RATIO_WARNING_THRESHOLD = Big(0.1) // 10%
     private readonly PERP_FEE = Big(0.001) // 0.1%
     private readonly AMM_CONFIG_MAP: Record<string, AmmConfig> = {
         "BTC-USDC": {
-            ENABLED: false,
-            MAX_SLIPPAGE_RATIO: Big(0.002),
+            ENABLED: true,
+            MAX_SLIPPAGE_RATIO: Big(0.0001),
             PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "BTC-PERP",
-            ASSET_CAP: Big(3000),
+            ASSET_CAP: Big(1000),
             PERPFI_MIN_TRADE_NOTIONAL: Big(100),
-            FTX_SIZE_DIFF_THRESHOLD: Big(0.001),
+            FTX_SIZE_DIFF_THRESHOLD: Big(0.0001),
         },
         "ETH-USDC": {
-            ENABLED: false,
-            MAX_SLIPPAGE_RATIO: Big(0.002),
+            ENABLED: true,
+            MAX_SLIPPAGE_RATIO: Big(0.0001),
             PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "ETH-PERP",
-            ASSET_CAP: Big(3000),
+            ASSET_CAP: Big(1000),
             PERPFI_MIN_TRADE_NOTIONAL: Big(100),
             FTX_SIZE_DIFF_THRESHOLD: Big(0.001),
         },
         "YFI-USDC": {
             ENABLED: true,
-            MAX_SLIPPAGE_RATIO: Big(0.002),
+            MAX_SLIPPAGE_RATIO: Big(0.0001),
             PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "YFI-PERP",
-            ASSET_CAP: Big(10000),
+            ASSET_CAP: Big(1000),
             PERPFI_MIN_TRADE_NOTIONAL: Big(100),
             FTX_SIZE_DIFF_THRESHOLD: Big(0.001),
         },
         "DOT-USDC": {
-            ENABLED: false,
-            MAX_SLIPPAGE_RATIO: Big(0.002),
+            ENABLED: true,
+            MAX_SLIPPAGE_RATIO: Big(0.0001),
             PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "DOT-PERP",
-            ASSET_CAP: Big(10000),
+            ASSET_CAP: Big(1000),
             PERPFI_MIN_TRADE_NOTIONAL: Big(100),
             FTX_SIZE_DIFF_THRESHOLD: Big(0.1),
         },
         "SNX-USDC": {
-            ENABLED: false,
-            MAX_SLIPPAGE_RATIO: Big(0.002),
+            ENABLED: true,
+            MAX_SLIPPAGE_RATIO: Big(0.0001),
             PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "SNX-PERP",
-            ASSET_CAP: Big(10000),
+            ASSET_CAP: Big(1000),
             PERPFI_MIN_TRADE_NOTIONAL: Big(100),
             FTX_SIZE_DIFF_THRESHOLD: Big(0.1),
         },
@@ -111,6 +111,7 @@ export class Arbitrageur {
         this.ftxClient = new FTXRest({
             key: this.serverProfile.ftxApiKey,
             secret: this.serverProfile.ftxApiSecret,
+            // subaccount: "arb", // Uncomment this line if you're using a subaccount on FTX
         })
     }
 
@@ -127,9 +128,8 @@ export class Arbitrageur {
         if (runtime === "cli") {
             while (true) {
                 await this.arbitrage()
-                await sleep(1000 * 5) // 1 minute
+                await sleep(1000 * 60) // 1 minute
             }
-        
         } else {
             await this.arbitrage()
         }
