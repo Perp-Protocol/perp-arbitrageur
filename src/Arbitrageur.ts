@@ -5,8 +5,8 @@ import { ERC20Service } from "./ERC20Service"
 import { EthMetadata, SystemMetadataFactory } from "./SystemMetadataFactory"
 import { EthService } from "./EthService"
 import { FtxService, Position as FTXPosition, PlaceOrderPayload } from "./FtxService"
+import { isNumber } from "lodash"
 import { Log } from "./Log"
-import { sleep } from "./util"
 import { MaxUint256 } from "@ethersproject/constants"
 import { Mutex } from "async-mutex"
 import { parseBytes32String } from "@ethersproject/strings"
@@ -14,6 +14,7 @@ import { PerpService, Side, Position } from "./PerpService"
 import { Runtime } from "../scripts/helper"
 import { ServerProfile } from "./ServerProfile"
 import { Service } from "typedi"
+import { sleep } from "./util"
 import { Wallet } from "ethers"
 import Big from "big.js"
 import FTXRest from "ftx-api-rest"
@@ -337,7 +338,7 @@ export class Arbitrageur {
                         side = Side.SELL
                     }
                 }
-                if (side) {
+                if (isNumber(side)) {
                     this.log.jinfo({
                         event: "MitigateFTXPositionSizeDiff",
                         params: {
