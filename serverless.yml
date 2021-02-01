@@ -13,8 +13,8 @@ provider:
     versionFunctions: false
     apiGateway:
         minimumCompressionSize: 1024
-    stage: ${env:STAGE}
-    region: ${env:AWS_REGION}
+    stage: production
+    region: ap-northeast-1
     environment:
         WEB3_ENDPOINT: ${env:WEB3_ENDPOINT}
         ARBITRAGEUR_PK: ${env:ARBITRAGEUR_PK}
