@@ -112,7 +112,7 @@ export class Arbitrageur {
         this.ftxClient = new FTXRest({
             key: this.serverProfile.ftxApiKey,
             secret: this.serverProfile.ftxApiSecret,
-            // subaccount: "arb", // Uncomment this line if you're using a subaccount on FTX
+            // subaccount: "arb", // Uncomment this line if you're using a subaccount for FTX
         })
     }
 
@@ -148,7 +148,7 @@ export class Arbitrageur {
                 event: "xDaiNotEnough",
                 params: { balance: xDaiBalance.toFixed() },
             })
-            process.exit(0)
+            return
         }
 
         // Check FTX balance (USD)
@@ -162,7 +162,7 @@ export class Arbitrageur {
                 event: "FtxUsdNotEnough",
                 params: { balance: ftxBalance.free.toFixed() },
             })
-            process.exit(0)
+            return
         }
 
         // Check FTX margin ratio
@@ -177,7 +177,7 @@ export class Arbitrageur {
                 event: "FtxMarginRatioTooLow",
                 params: { balance: ftxMarginRatio.toFixed() },
             })
-            process.exit(0)
+            return
         }
 
         // Fetch FTX owned positions
