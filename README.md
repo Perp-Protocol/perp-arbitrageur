@@ -21,6 +21,7 @@ $ npm install
     - `QUOTE_BALANCE_REFILL_THRESHOLD`
     - `PERP_LEVERAGE`
     - `FTX_USD_BALANCE_WARNING_THRESHOLD`
+    - `subaccount` if you're using a subaccount for FTX
 
 See [src/Arbitrageur.ts](https://github.com/perpetual-protocol/arbitrageur/blob/main/src/Arbitrageur.ts) for more details.
 
