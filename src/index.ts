@@ -4,5 +4,5 @@ import { Arbitrageur } from "./Arbitrageur"
 
 (async () => {
     const arbitrageur = Container.get(Arbitrageur)
-    await arbitrageur.start("cli")
+    await arbitrageur.startInterval()
 })()

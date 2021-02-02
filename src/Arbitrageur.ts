@@ -11,10 +11,8 @@ import { MaxUint256 } from "@ethersproject/constants"
 import { Mutex } from "async-mutex"
 import { parseBytes32String } from "@ethersproject/strings"
 import { PerpService, Side, Position } from "./PerpService"
-import { Runtime } from "../scripts/helper"
 import { ServerProfile } from "./ServerProfile"
 import { Service } from "typedi"
-import { sleep } from "./util"
 import { Wallet } from "ethers"
 import Big from "big.js"
 import FTXRest from "ftx-api-rest"
@@ -48,7 +46,7 @@ export class Arbitrageur {
             FTX_MARKET_ID: "BTC-PERP",
             ASSET_CAP: Big(1000),
             PERPFI_MIN_TRADE_NOTIONAL: Big(100),
-            FTX_SIZE_DIFF_THRESHOLD: Big(0.0001),
+            FTX_SIZE_DIFF_THRESHOLD: Big(0.001),
         },
         "ETH-USDC": {
             ENABLED: true,
@@ -116,7 +114,7 @@ export class Arbitrageur {
         })
     }
 
-    async start(runtime: Runtime): Promise<void> {
+    async start(): Promise<void> {
         this.nextNonce = await this.arbitrageur.getTransactionCount()
         this.log.jinfo({
             event: "Start",
@@ -126,12 +124,21 @@ export class Arbitrageur {
             },
         })
 
-        if (runtime === "cli") {
-            await this.arbitrage()
-            setInterval(async () => await this.arbitrage(), 1000 * 60 * 1) // 1 minute
-        } else {
-            await this.arbitrage()
-        }
+        await this.arbitrage()
+    }
+
+    async startInterval(): Promise<void> {
+        this.nextNonce = await this.arbitrageur.getTransactionCount()
+        this.log.jinfo({
+            event: "StartInterval",
+            params: {
+                arbitrageur: this.arbitrageur.address,
+                nextNonce: this.nextNonce,
+            },
+        })
+
+        await this.arbitrage()
+        setInterval(async () => await this.arbitrage(), 1000 * 60 * 1) // 1 minute
     }
 
     async arbitrage(): Promise<void> {

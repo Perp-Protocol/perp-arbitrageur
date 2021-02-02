@@ -2,7 +2,6 @@ import { ExecOptions } from "child_process"
 import { resolve } from "path"
 import { exec, test } from "shelljs"
 
-export type Runtime = "cli" | "aws-lambda"
 export type Stage = "production"
 export type Network = "homestead" | "rinkeby" | "ropsten" | "kovan" | "xdai" | "sokol" | "localhost"
 export type Layer = "layer1" | "layer2"

@@ -4,5 +4,5 @@ import { Arbitrageur } from "./Arbitrageur"
 
 module.exports.handler = async (): Promise<void> => {
     const arbitrageur = Container.get(Arbitrageur)
-    await arbitrageur.start("aws-lambda")
+    await arbitrageur.start()
 }
