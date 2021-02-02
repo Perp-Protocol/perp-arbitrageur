@@ -38,5 +38,6 @@ custom:
 functions:
     arbitrageur:
         handler: build/src/schedule.handler
+        maximumRetryAttempts: 0
         events:
             - schedule: rate(1 minute)
