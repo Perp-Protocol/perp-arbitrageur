@@ -533,7 +533,7 @@ export class Arbitrageur {
         if (amount.gt(maxOpenNotional)) {
             amount = maxOpenNotional
             this.log.jinfo({
-                event: "PerpFiExceedCap",
+                event: "AmountPerpFiExceedCap",
                 params: {
                     ammConfig,
                     side,
@@ -554,7 +554,7 @@ export class Arbitrageur {
         if (amount.lt(ammConfig.PERPFI_MIN_TRADE_NOTIONAL)) {
             amount = Big(0)
             this.log.jinfo({
-                event: "NotReachPerpFiMinTradeNotional",
+                event: "AmountNotReachPerpFiMinTradeNotional",
                 params: {
                     ammConfig,
                     side,
@@ -582,7 +582,7 @@ export class Arbitrageur {
             })
         } else {
             this.log.jinfo({
-                event: "CalculatedAmount",
+                event: "AmountCalculated",
                 params: {
                     ammConfig,
                     side,
