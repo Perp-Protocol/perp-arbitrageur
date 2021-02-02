@@ -127,10 +127,8 @@ export class Arbitrageur {
         })
 
         if (runtime === "cli") {
-            while (true) {
-                await this.arbitrage()
-                await sleep(1000 * 60) // 1 minute
-            }
+            await this.arbitrage()
+            setInterval(async () => await this.arbitrage(), 1000 * 60 * 1) // 1 minute
         } else {
             await this.arbitrage()
         }
