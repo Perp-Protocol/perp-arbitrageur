@@ -3,8 +3,8 @@
 ## Installation
 
 ```bash
-$ git clone https://github.com/perpetual-protocol/arbitrageur.git
-$ cd arbitrageur
+$ git clone https://github.com/perpetual-protocol/perp-arbitrageur.git
+$ cd perp-arbitrageur
 $ npm install
 ```
 
@@ -12,15 +12,15 @@ $ npm install
 
 - Deposit enough USDC to your wallet on [Perpetual Protocol Exchange](https://perp.exchange/)
 - Deposit enough USD or Stablecoins to your account on [FTX](https://ftx.com/)
-- In `.env.production` file, replace the following variables with yours
-    - `ARBITRAGEUR_V2_PK`
+- In `.env.production` file, replace the following variables with yours:
+    - `ARBITRAGEUR_PK`
     - `FTX_API_KEY`
     - `FTX_API_SECRET`
-- In `src/Arbitrageur.ts`, adjust the following variables according to your funds
+- In `src/Arbitrageur.ts`, adjust the following variables according to your needs:
     - `XDAI_BALANCE_WARNING_THRESHOLD`
     - `QUOTE_BALANCE_REFILL_THRESHOLD`
-    - `PERP_LEVERAGE`
     - `FTX_USD_BALANCE_WARNING_THRESHOLD`
+    - `PERP_LEVERAGE`
     - `subaccount` if you're using a subaccount for FTX
 
 See [src/Arbitrageur.ts](https://github.com/perpetual-protocol/arbitrageur/blob/main/src/Arbitrageur.ts) for more details.
