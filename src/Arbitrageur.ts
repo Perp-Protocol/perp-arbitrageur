@@ -479,6 +479,7 @@ export class Arbitrageur {
             this.log.jinfo({
                 event: "NotTriggered",
                 params: {
+                    spread,
                     ammConfig
                 },
             })
