@@ -31,6 +31,7 @@ interface AmmConfig {
 @Service()
 export class Arbitrageur {
     private readonly log = Log.getLogger(Arbitrageur.name)
+    private readonly BLOCK_TIMESTAMP_FRESHNESS_THRESHOLD = 60 * 30 // 30 minutes
     private readonly XDAI_BALANCE_WARNING_THRESHOLD = Big(1)
     private readonly QUOTE_BALANCE_REFILL_THRESHOLD = Big(500)
     private readonly PERP_LEVERAGE = Big(5)
@@ -141,7 +142,24 @@ export class Arbitrageur {
         setInterval(async () => await this.arbitrage(), 1000 * 60 * 1) // 1 minute
     }
 
+    async checkBlockFreshness(): Promise<void> {
+        const latestBlockNumber = await this.ethService.provider.getBlockNumber()
+        const latestBlock = await this.ethService.getBlock(latestBlockNumber)
+        const diffNowSeconds = Math.floor(Date.now() / 1000) - latestBlock.timestamp
+        this.log.jinfo({
+            event: "LatestBlock",
+            params: {
+                latestBlockNumber, diffNowSeconds,
+            }
+        })
+        if (diffNowSeconds > this.BLOCK_TIMESTAMP_FRESHNESS_THRESHOLD) {
+            throw new Error("Get stale block")
+        }
+    }
+
     async arbitrage(): Promise<void> {
+        await this.checkBlockFreshness()
+
         // Check xDai balance
         const xDaiBalance = await this.ethService.getBalance(this.arbitrageur.address)
         this.log.jinfo({

@@ -1,4 +1,5 @@
 import { BigNumber } from "@ethersproject/bignumber"
+import { Block, WebSocketProvider } from "@ethersproject/providers"
 import { ethers, Wallet } from "ethers"
 import { Log } from "./Log"
 import { parseUnits } from "@ethersproject/units"
@@ -6,12 +7,11 @@ import { ServerProfile } from "./ServerProfile"
 import { Service } from "typedi"
 import { sleep } from "./util"
 import { TransactionReceipt, TransactionResponse } from "@ethersproject/abstract-provider"
-import { WebSocketProvider } from "@ethersproject/providers"
 import Big from "big.js"
 
 @Service()
 export class EthService {
-    private provider!: WebSocketProvider
+    provider!: WebSocketProvider
     static readonly log = Log.getLogger(EthService.name)
 
     constructor(readonly serverProfile: ServerProfile) {
@@ -40,6 +40,10 @@ export class EthService {
 
     createContract<T>(address: string, abi: ethers.ContractInterface, signer?: ethers.Signer): T {
         return (new ethers.Contract(address, abi, signer ? signer : this.provider) as unknown) as T
+    }
+
+    async getBlock(blockNumber: number): Promise<Block> {
+        return await this.provider.getBlock(blockNumber)
     }
 
     async getSafeGasPrice(): Promise<BigNumber> {
