@@ -5,7 +5,6 @@ import fetch from "node-fetch"
 
 @Service()
 export class SystemMetadataFactory {
-    private readonly log = Log.getLogger(SystemMetadataFactory.name)
     private ethMetadata!: EthMetadata
 
     constructor(readonly serverProfile: ServerProfile) {}
