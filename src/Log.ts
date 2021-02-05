@@ -49,7 +49,7 @@ export class Log {
 
     jwarn(obj: object): void {
         const strObj = JSON.stringify(obj)
-        this.log.error(strObj)
+        this.log.warn(strObj)
     }
 
     error(e: string | Error): void {
