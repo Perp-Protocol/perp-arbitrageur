@@ -2,10 +2,10 @@ import Big from "big.js"
 
 export const preflightCheck = {
     BLOCK_TIMESTAMP_FRESHNESS_THRESHOLD: 60 * 30, // 30 minutes
-    XDAI_BALANCE_WARNING_THRESHOLD: Big(1),
-    USDC_BALANCE_WARNING_THRESHOLD: Big(100),
-    FTX_USD_BALANCE_WARNING_THRESHOLD: Big(100),
-    FTX_MARGIN_RATIO_WARNING_THRESHOLD: Big(0.1), // 10%
+    XDAI_BALANCE_THRESHOLD: Big(1),
+    USDC_BALANCE_THRESHOLD: Big(100),
+    FTX_USD_BALANCE_THRESHOLD: Big(100),
+    FTX_MARGIN_RATIO_THRESHOLD: Big(0.1), // 10%
 }
 
 export interface AmmConfig {
@@ -22,7 +22,7 @@ export interface AmmConfig {
 
 export const ammConfigMap: Record<string, AmmConfig> = {
     "BTC-USDC": {
-        ENABLED: false,
+        ENABLED: true,
         ASSET_CAP: Big(1000),
         PERPFI_LEVERAGE: Big(5),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
@@ -33,7 +33,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
         FTX_MIN_TRADE_SIZE: Big(0.001),
     },
     "ETH-USDC": {
-        ENABLED: false,
+        ENABLED: true,
         ASSET_CAP: Big(1000),
         PERPFI_LEVERAGE: Big(5),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
@@ -55,7 +55,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
         FTX_MIN_TRADE_SIZE: Big(0.001),
     },
     "DOT-USDC": {
-        ENABLED: false,
+        ENABLED: true,
         ASSET_CAP: Big(1000),
         PERPFI_LEVERAGE: Big(5),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),

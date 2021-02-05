@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import "./init"
 import { Amm } from "../types/ethers"
 import { ERC20Service } from "./ERC20Service"
@@ -11,93 +10,23 @@ import { MaxUint256 } from "@ethersproject/constants"
 import { Mutex } from "async-mutex"
 import { parseBytes32String } from "@ethersproject/strings"
 import { PerpService, Side, Position } from "./PerpService"
+import { preflightCheck, ammConfigMap, AmmConfig } from "./configs"
 import { ServerProfile } from "./ServerProfile"
 import { Service } from "typedi"
 import { Wallet } from "ethers"
 import Big from "big.js"
 import FTXRest from "ftx-api-rest"
 
-interface AmmConfig {
-    ENABLED: boolean
-    ASSET_CAP: Big
-    PERPFI_MIN_TRADE_NOTIONAL: Big
-    MAX_SLIPPAGE_RATIO: Big
-    PERPFI_SHORT_ENTRY_TRIGGER: Big
-    PERPFI_LONG_ENTRY_TRIGGER: Big
-    FTX_MARKET_ID: string
-    FTX_MIN_TRADE_SIZE: Big
-}
-
 @Service()
 export class Arbitrageur {
     private readonly log = Log.getLogger(Arbitrageur.name)
-    private readonly BLOCK_TIMESTAMP_FRESHNESS_THRESHOLD = 60 * 30 // 30 minutes
-    private readonly XDAI_BALANCE_WARNING_THRESHOLD = Big(1)
-    private readonly QUOTE_BALANCE_REFILL_THRESHOLD = Big(500)
-    private readonly PERP_LEVERAGE = Big(5)
-    private readonly FTX_USD_BALANCE_WARNING_THRESHOLD = Big(500)
-    private readonly FTX_MARGIN_RATIO_WARNING_THRESHOLD = Big(0.1) // 10%
-    private readonly PERP_FEE = Big(0.001) // 0.1%
-    private readonly AMM_CONFIG_MAP: Record<string, AmmConfig> = {
-        "BTC-USDC": {
-            ENABLED: true,
-            MAX_SLIPPAGE_RATIO: Big(0.0001),
-            PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
-            PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
-            FTX_MARKET_ID: "BTC-PERP",
-            ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
-            FTX_MIN_TRADE_SIZE: Big(0.001),
-        },
-        "ETH-USDC": {
-            ENABLED: true,
-            MAX_SLIPPAGE_RATIO: Big(0.0001),
-            PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
-            PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
-            FTX_MARKET_ID: "ETH-PERP",
-            ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
-            FTX_MIN_TRADE_SIZE: Big(0.001),
-        },
-        "YFI-USDC": {
-            ENABLED: true,
-            MAX_SLIPPAGE_RATIO: Big(0.0001),
-            PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
-            PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
-            FTX_MARKET_ID: "YFI-PERP",
-            ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
-            FTX_MIN_TRADE_SIZE: Big(0.001),
-        },
-        "DOT-USDC": {
-            ENABLED: true,
-            MAX_SLIPPAGE_RATIO: Big(0.0001),
-            PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
-            PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
-            FTX_MARKET_ID: "DOT-PERP",
-            ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
-            FTX_MIN_TRADE_SIZE: Big(0.1),
-        },
-        "SNX-USDC": {
-            ENABLED: true,
-            MAX_SLIPPAGE_RATIO: Big(0.0001),
-            PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
-            PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
-            FTX_MARKET_ID: "SNX-PERP",
-            ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
-            FTX_MIN_TRADE_SIZE: Big(0.1),
-        },
-    }
-
-    private readonly arbitrageur: Wallet
     private readonly nonceMutex = new Mutex()
-    private nextNonce!: number
+    private readonly perpfiFee = Big(0.001) // 0.1%
+    private readonly arbitrageur: Wallet
+    private readonly ftxClient: any
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private readonly ftxClient!: any
     private ftxPositionsMap!: Record<string, FTXPosition>
+    private nextNonce!: number
 
     constructor(
         readonly perpService: PerpService,
@@ -152,7 +81,7 @@ export class Arbitrageur {
                 latestBlockNumber, diffNowSeconds,
             }
         })
-        if (diffNowSeconds > this.BLOCK_TIMESTAMP_FRESHNESS_THRESHOLD) {
+        if (diffNowSeconds > preflightCheck.BLOCK_TIMESTAMP_FRESHNESS_THRESHOLD) {
             throw new Error("Get stale block")
         }
     }
@@ -166,7 +95,7 @@ export class Arbitrageur {
             event: "xDaiBalance",
             params: { balance: xDaiBalance.toFixed() },
         })
-        if (xDaiBalance.lt(this.XDAI_BALANCE_WARNING_THRESHOLD)) {
+        if (xDaiBalance.lt(preflightCheck.XDAI_BALANCE_THRESHOLD)) {
             this.log.jwarn({
                 event: "xDaiNotEnough",
                 params: { balance: xDaiBalance.toFixed() },
@@ -180,7 +109,7 @@ export class Arbitrageur {
             event: "FtxUsdBalance",
             params: { balance: ftxBalance.free.toFixed() },
         })
-        if (ftxBalance.free.lt(this.FTX_USD_BALANCE_WARNING_THRESHOLD)) {
+        if (ftxBalance.free.lt(preflightCheck.FTX_USD_BALANCE_THRESHOLD)) {
             this.log.jerror({
                 event: "FtxUsdNotEnough",
                 params: { balance: ftxBalance.free.toFixed() },
@@ -195,7 +124,7 @@ export class Arbitrageur {
             event: "FtxMarginRatio",
             params: { balftxMarginRatioance: ftxMarginRatio.toFixed() },
         })
-        if (!ftxMarginRatio.eq(0) && ftxMarginRatio.lt(this.FTX_MARGIN_RATIO_WARNING_THRESHOLD)) {
+        if (!ftxMarginRatio.eq(0) && ftxMarginRatio.lt(preflightCheck.FTX_MARGIN_RATIO_THRESHOLD)) {
             this.log.jerror({
                 event: "FtxMarginRatioTooLow",
                 params: { balance: ftxMarginRatio.toFixed() },
@@ -230,8 +159,8 @@ export class Arbitrageur {
 
     async arbitrageAmm(amm: Amm, systemMetadata: EthMetadata): Promise<void> {
         const ammPair = await this.getAmmPair(amm.address)
-        const ammConfig = this.AMM_CONFIG_MAP[ammPair]
-        
+        const ammConfig = ammConfigMap[ammPair]
+
         if (!ammConfig) {
             this.log.jinfo({
                 event: "AmmConfigMissing",
@@ -270,7 +199,7 @@ export class Arbitrageur {
 
         // Check PERP balance
         const quoteBalance = await this.erc20Service.balanceOf(quoteAssetAddr, arbitrageurAddr)
-        if (quoteBalance.lt(this.QUOTE_BALANCE_REFILL_THRESHOLD)) {
+        if (quoteBalance.lt(preflightCheck.USDC_BALANCE_THRESHOLD)) {
             this.log.jwarn({
                 event: "QuoteAssetNotEnough",
                 params: { balance: quoteBalance.toFixed() },
@@ -325,7 +254,7 @@ export class Arbitrageur {
                 openNotional: +position.openNotional,
             },
         })
-        
+
         // List FTX position
         const ftxPosition = this.ftxPositionsMap[ammConfig.FTX_MARKET_ID]
         if (ftxPosition) {
@@ -339,7 +268,7 @@ export class Arbitrageur {
                     diff: +ftxSizeDiff,
                 },
             })
-    
+
             if (ftxSizeDiff.abs().gte(ammConfig.FTX_MIN_TRADE_SIZE)) {
                 let side = null
                 if (ftxPositionSize.gte(Big(0))) {
@@ -420,7 +349,7 @@ export class Arbitrageur {
 
             await Promise.all([
                 this.openFTXPosition(ammConfig.FTX_MARKET_ID, ftxPositionSizeAbs, Side.SELL),
-                this.openPerpFiPosition(amm, priceFeedKey, regAmount.div(this.PERP_LEVERAGE), Side.BUY),
+                this.openPerpFiPosition(amm, priceFeedKey, regAmount, ammConfig.PERPFI_LEVERAGE, Side.BUY),
             ])
         } else if (spread.gt(ammConfig.PERPFI_SHORT_ENTRY_TRIGGER)) {
             const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.SELL)
@@ -431,7 +360,7 @@ export class Arbitrageur {
 
             await Promise.all([
                 this.openFTXPosition(ammConfig.FTX_MARKET_ID, ftxPositionSizeAbs, Side.BUY),
-                this.openPerpFiPosition(amm, priceFeedKey, regAmount.div(this.PERP_LEVERAGE), Side.SELL),
+                this.openPerpFiPosition(amm, priceFeedKey, regAmount, ammConfig.PERPFI_LEVERAGE, Side.SELL),
             ])
         } else {
             this.log.jinfo({
@@ -503,9 +432,9 @@ export class Arbitrageur {
             })
         }
 
-        const feeSafetyMargin = ammConfig.ASSET_CAP.mul(this.PERP_FEE).mul(3)
-        if (amount.gt(quoteBalance.sub(feeSafetyMargin).mul(this.PERP_LEVERAGE))) {
-            amount = quoteBalance.sub(feeSafetyMargin).mul(this.PERP_LEVERAGE)
+        const feeSafetyMargin = ammConfig.ASSET_CAP.mul(this.perpfiFee).mul(3)
+        if (amount.gt(quoteBalance.sub(feeSafetyMargin).mul(ammConfig.PERPFI_LEVERAGE))) {
+            amount = quoteBalance.sub(feeSafetyMargin).mul(ammConfig.PERPFI_LEVERAGE)
         }
 
         if (amount.lt(ammConfig.PERPFI_MIN_TRADE_NOTIONAL)) {
@@ -592,7 +521,8 @@ export class Arbitrageur {
         return targetAmountSq.sqrt().sub(quoteAssetReserve)
     }
 
-    private async openPerpFiPosition(amm: Amm, baseAssetSymbol: string, quoteAssetAmount: Big, side: Side): Promise<void> {
+    private async openPerpFiPosition(amm: Amm, baseAssetSymbol: string, quoteAssetAmount: Big, leverage: Big, side: Side): Promise<void> {
+        const amount = quoteAssetAmount.div(leverage)
         const gasPrice = await this.ethService.getSafeGasPrice()
 
         const release = await this.nonceMutex.acquire()
@@ -602,8 +532,8 @@ export class Arbitrageur {
                 this.arbitrageur,
                 amm.address,
                 side,
-                quoteAssetAmount,
-                this.PERP_LEVERAGE,
+                amount,
+                leverage,
                 Big(0),
                 {
                     nonce: this.nextNonce,
@@ -622,7 +552,7 @@ export class Arbitrageur {
                 side,
                 baseAssetSymbol: baseAssetSymbol,
                 quoteAssetAmount: +quoteAssetAmount,
-                leverage: this.PERP_LEVERAGE.toFixed(),
+                leverage: leverage.toFixed(),
                 txHash: tx.hash,
                 gasPrice: tx.gasPrice.toString(),
                 nonce: tx.nonce,
