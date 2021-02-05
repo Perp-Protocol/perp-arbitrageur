@@ -1,7 +1,6 @@
 import { Log } from "./Log"
 import { ServerProfile } from "./ServerProfile"
 import { Service } from "typedi"
-import { SystemMetadata } from "../scripts/helper"
 import fetch from "node-fetch"
 
 @Service()
@@ -37,6 +36,57 @@ export class SystemMetadataFactory {
             clearingHouseAddr: contracts.ClearingHouse.address,
             clearingHouseViewerAddr: contracts.ClearingHouseViewer.address,
         }
+    }
+}
+
+export type Network = "homestead" | "xdai"
+export type Layer = "layer1" | "layer2"
+
+export interface ContractMetadata {
+    name: string
+    address: string
+}
+
+export interface AccountMetadata {
+    privateKey: string
+    balance: string
+}
+
+export interface EthereumMetadata {
+    contracts: Record<string, ContractMetadata>
+    accounts: AccountMetadata[]
+    network: Network
+}
+
+export interface ExternalContracts {
+    // default is gnosis multisig safe which plays the governance role
+    foundationGovernance?: string
+
+    // default is gnosis multisig safe which plays the treasury role
+    foundationTreasury?: string
+
+    keeper?: string
+    arbitrageur?: string
+
+    ambBridgeOnXDai?: string
+    ambBridgeOnEth?: string
+    multiTokenMediatorOnXDai?: string
+    multiTokenMediatorOnEth?: string
+
+    tether?: string
+    usdc?: string
+    perp?: string
+
+    testnetFaucet?: string
+}
+
+export interface LayerMetadata extends EthereumMetadata {
+    externalContracts: ExternalContracts
+}
+
+export interface SystemMetadata {
+    layers: {
+        [key in Layer]?: LayerMetadata
     }
 }
 
