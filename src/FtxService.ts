@@ -15,30 +15,22 @@ export class FtxService {
         return ftxMarket
     }
 
-    async getBalanceUsd(ftxClient: any): Promise<Balance> {
+    async getBalance(ftxClient: any): Promise<Big> {
         const data = await ftxClient.request({
             method: "GET",
             path: "/wallet/balances",
         })
         this.log.jinfo({
-            event: "GetBalanceUsd",
+            event: "getBalance",
             params: data,
         })
         for (let i = 0; i < data.result.length; i++) {
             const asset = data.result[i]
             if (asset.coin === "USD") {
-                return {
-                    coin: asset.coin,
-                    free: Big(asset.free),
-                    total: Big(asset.total),
-                }
+                return Big(asset.free)
             }
         }
-        return {
-            coin: "USD",
-            free: Big(0),
-            total: Big(0),
-        }
+        return Big(0)
     }
 
     async getAccountInfo(ftxClient: any): Promise<AccountInfo> {
@@ -105,12 +97,6 @@ export class FtxService {
 export interface AccountInfo {
     marginFraction: Big
     maintenanceMarginRequirement: Big
-}
-
-export interface Balance {
-    coin: string
-    free: Big
-    total: Big
 }
 
 export interface Position {

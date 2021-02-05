@@ -104,15 +104,15 @@ export class Arbitrageur {
         }
 
         // Check FTX balance (USD)
-        const ftxBalance = await this.ftxService.getBalanceUsd(this.ftxClient)
+        const ftxBalance = await this.ftxService.getBalance(this.ftxClient)
         this.log.jinfo({
             event: "FtxUsdBalance",
-            params: { balance: ftxBalance.free.toFixed() },
+            params: { balance: ftxBalance.toFixed() },
         })
-        if (ftxBalance.free.lt(preflightCheck.FTX_USD_BALANCE_THRESHOLD)) {
+        if (ftxBalance.lt(preflightCheck.FTX_USD_BALANCE_THRESHOLD)) {
             this.log.jerror({
                 event: "FtxUsdNotEnough",
-                params: { balance: ftxBalance.free.toFixed() },
+                params: { balance: ftxBalance.toFixed() },
             })
             return
         }
