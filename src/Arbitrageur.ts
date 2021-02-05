@@ -412,17 +412,8 @@ export class Arbitrageur {
 
         // Open positions if needed
         if (position.size.gte(0) && spread.lt(ammConfig.PERPFI_LONG_ENTRY_TRIGGER)) {
-            const regAmount = this.calculateRegulatedPositionNotional(
-                ammConfig,
-                quoteBalance,
-                amount,
-                position,
-                Side.BUY,
-            )
-            const ftxPositionSizeAbs = regAmount
-                .div(ftxPrice)
-                .abs()
-                .round(3) // round to FTX decimals
+            const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.BUY)
+            const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
             if (ftxPositionSizeAbs.eq(Big(0))) {
                 return
             }
@@ -432,17 +423,8 @@ export class Arbitrageur {
                 this.openPerpFiPosition(amm, priceFeedKey, regAmount.div(this.PERP_LEVERAGE), Side.BUY),
             ])
         } else if (position.size.lte(0) && spread.gt(ammConfig.PERPFI_SHORT_ENTRY_TRIGGER)) {
-            const regAmount = this.calculateRegulatedPositionNotional(
-                ammConfig,
-                quoteBalance,
-                amount,
-                position,
-                Side.SELL,
-            )
-            const ftxPositionSizeAbs = regAmount
-                .div(ftxPrice)
-                .abs()
-                .round(3) // round to FTX decimals
+            const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.SELL)
+            const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
             if (ftxPositionSizeAbs.eq(Big(0))) {
                 return
             }
@@ -454,17 +436,8 @@ export class Arbitrageur {
         }
         // Open reversed positions if needed. Don't need to refetch the position again because the position won't be reduced.
         else if (position.size.gt(0) && spread.gt(ammConfig.PERPFI_SHORT_ENTRY_TRIGGER)) {
-            const regAmount = this.calculateRegulatedPositionNotional(
-                ammConfig,
-                quoteBalance,
-                amount,
-                position,
-                Side.SELL,
-            )
-            const ftxPositionSizeAbs = regAmount
-                .div(ftxPrice)
-                .abs()
-                .round(3) // round to FTX decimals
+            const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.SELL)
+            const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
             if (ftxPositionSizeAbs.eq(Big(0))) {
                 return
             }
@@ -481,10 +454,7 @@ export class Arbitrageur {
                 position,
                 Side.BUY,
             )
-            const ftxPositionSizeAbs = regAmount
-                .div(ftxPrice)
-                .abs()
-                .round(3) // round to FTX decimals
+            const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
             if (ftxPositionSizeAbs.eq(Big(0))) {
                 return
             }
@@ -620,6 +590,24 @@ export class Arbitrageur {
             })
         }
         return amount
+    }
+
+    calculateFTXpositionSize(ammConfig: AmmConfig, perpFiRegulatedPositionNotional: Big, ftxPrice: Big): Big {
+        let ftxPositionSizeAbs = perpFiRegulatedPositionNotional
+            .div(ftxPrice)
+            .abs()
+            .round(3) // round to FTX decimals
+        if (ftxPositionSizeAbs.lt(ammConfig.FTX_MIN_TRADE_SIZE)) {
+            ftxPositionSizeAbs = Big(0)
+            this.log.jinfo({
+                event: "PositionSizeNotReachFTXMinTradeSize",
+                params: {
+                    ammConfig,
+                    ftxPositionSizeAbs: +ftxPositionSizeAbs,
+                },
+            })
+        }
+        return ftxPositionSizeAbs
     }
 
     static calcQuoteAssetNeeded(baseAssetReserve: Big, quoteAssetReserve: Big, price: Big): Big {
