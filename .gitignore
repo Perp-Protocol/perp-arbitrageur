@@ -107,3 +107,4 @@ dist
 /types/ethers
 
 .env.production
+src/configs.ts
