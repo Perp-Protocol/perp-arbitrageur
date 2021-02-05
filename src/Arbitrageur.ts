@@ -242,7 +242,7 @@ export class Arbitrageur {
         })
 
         // List PERP position
-        const position = await this.perpService.getPosition(amm.address, this.arbitrageur.address)
+        const position = await this.perpService.getPersonalPositionWithFundingPayment(amm.address, this.arbitrageur.address)
         const perpfiPositionSize = position.size
         this.log.jinfo({
             event: "PerpFiPosition",

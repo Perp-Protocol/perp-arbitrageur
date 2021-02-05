@@ -1,4 +1,4 @@
-import { Amm, AmmReader, ClearingHouse, InsuranceFund } from "../types/ethers"
+import { Amm, AmmReader, ClearingHouse, ClearingHouseViewer, InsuranceFund } from "../types/ethers"
 import { BigNumber } from "@ethersproject/bignumber"
 import { ethers, Wallet } from "ethers"
 import { EthMetadata, SystemMetadataFactory } from "./SystemMetadataFactory"
@@ -13,6 +13,7 @@ import AmmArtifact from "@perp/contract/build/contracts/Amm.json"
 import AmmReaderArtifact from "@perp/contract/build/contracts/AmmReader.json"
 import Big from "big.js"
 import ClearingHouseArtifact from "@perp/contract/build/contracts/ClearingHouse.json"
+import ClearingHouseViewerArtifact from "@perp/contract/build/contracts/ClearingHouseViewer.json"
 import InsuranceFundArtifact from "@perp/contract/build/contracts/InsuranceFund.json"
 
 export enum Side {
@@ -79,6 +80,14 @@ export class PerpService {
         )
     }
 
+    private async createClearingHouseViewer(signer?: ethers.Signer): Promise<ClearingHouseViewer> {
+        return this.createContract<ClearingHouseViewer>(
+            systemMetadata => systemMetadata.clearingHouseViewerAddr,
+            ClearingHouseViewerArtifact.abi,
+            signer,
+        )
+    }
+
     private async createContract<T>(
         addressGetter: (systemMetadata: EthMetadata) => string,
         abi: ethers.ContractInterface,
@@ -125,6 +134,17 @@ export class PerpService {
     async getPosition(ammAddr: string, traderAddr: string): Promise<Position> {
         const clearingHouse = await this.createClearingHouse()
         const position = (await clearingHouse.functions.getPosition(ammAddr, traderAddr))[0]
+        return {
+            size: PerpService.fromWei(position.size.d),
+            margin: PerpService.fromWei(position.margin.d),
+            openNotional: PerpService.fromWei(position.openNotional.d),
+            lastUpdatedCumulativePremiumFraction: PerpService.fromWei(position.lastUpdatedCumulativePremiumFraction.d),
+        }
+    }
+
+    async getPersonalPositionWithFundingPayment(ammAddr: string, traderAddr: string): Promise<Position> {
+        const clearingHouseViewer = await this.createClearingHouseViewer()
+        const position = await clearingHouseViewer.getPersonalPositionWithFundingPayment(ammAddr, traderAddr)
         return {
             size: PerpService.fromWei(position.size.d),
             margin: PerpService.fromWei(position.margin.d),
