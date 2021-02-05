@@ -447,13 +447,7 @@ export class Arbitrageur {
                 this.openPerpFiPosition(amm, priceFeedKey, regAmount.div(this.PERP_LEVERAGE), Side.SELL),
             ])
         } else if (position.size.lt(0) && spread.lt(ammConfig.PERPFI_LONG_ENTRY_TRIGGER)) {
-            const regAmount = this.calculateRegulatedPositionNotional(
-                ammConfig,
-                quoteBalance,
-                amount,
-                position,
-                Side.BUY,
-            )
+            const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.BUY)
             const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
             if (ftxPositionSizeAbs.eq(Big(0))) {
                 return
@@ -479,13 +473,7 @@ export class Arbitrageur {
         return `${ammState.baseAssetSymbol}-${ammState.quoteAssetSymbol}`
     }
 
-    calculateRegulatedPositionNotional(
-        ammConfig: AmmConfig,
-        quoteBalance: Big,
-        maxSlippageAmount: Big,
-        position: Position,
-        side: Side,
-    ): Big {
+    calculateRegulatedPositionNotional(ammConfig: AmmConfig, quoteBalance: Big, maxSlippageAmount: Big, position: Position, side: Side): Big {
         let maxOpenNotional = Big(0)
 
         // asset cap >> 1000
@@ -629,12 +617,7 @@ export class Arbitrageur {
         return targetAmountSq.sqrt().sub(quoteAssetReserve)
     }
 
-    private async openPerpFiPosition(
-        amm: Amm,
-        baseAssetSymbol: string,
-        quoteAssetAmount: Big,
-        side: Side,
-    ): Promise<void> {
+    private async openPerpFiPosition(amm: Amm, baseAssetSymbol: string, quoteAssetAmount: Big, side: Side): Promise<void> {
         const gasPrice = await this.ethService.getSafeGasPrice()
 
         const release = await this.nonceMutex.acquire()
