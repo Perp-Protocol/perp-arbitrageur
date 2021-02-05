@@ -25,7 +25,7 @@ interface AmmConfig {
     PERPFI_SHORT_ENTRY_TRIGGER: Big
     PERPFI_LONG_ENTRY_TRIGGER: Big
     FTX_MARKET_ID: string
-    FTX_SIZE_DIFF_THRESHOLD: Big
+    FTX_MIN_TRADE_SIZE: Big
 }
 
 @Service()
@@ -46,8 +46,8 @@ export class Arbitrageur {
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "BTC-PERP",
             ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(100),
-            FTX_SIZE_DIFF_THRESHOLD: Big(0.001),
+            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
+            FTX_MIN_TRADE_SIZE: Big(0.001),
         },
         "ETH-USDC": {
             ENABLED: true,
@@ -56,8 +56,8 @@ export class Arbitrageur {
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "ETH-PERP",
             ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(100),
-            FTX_SIZE_DIFF_THRESHOLD: Big(0.001),
+            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
+            FTX_MIN_TRADE_SIZE: Big(0.001),
         },
         "YFI-USDC": {
             ENABLED: true,
@@ -66,8 +66,8 @@ export class Arbitrageur {
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "YFI-PERP",
             ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(100),
-            FTX_SIZE_DIFF_THRESHOLD: Big(0.001),
+            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
+            FTX_MIN_TRADE_SIZE: Big(0.001),
         },
         "DOT-USDC": {
             ENABLED: true,
@@ -76,8 +76,8 @@ export class Arbitrageur {
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "DOT-PERP",
             ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(100),
-            FTX_SIZE_DIFF_THRESHOLD: Big(0.1),
+            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
+            FTX_MIN_TRADE_SIZE: Big(0.1),
         },
         "SNX-USDC": {
             ENABLED: true,
@@ -86,8 +86,8 @@ export class Arbitrageur {
             PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
             FTX_MARKET_ID: "SNX-PERP",
             ASSET_CAP: Big(1000),
-            PERPFI_MIN_TRADE_NOTIONAL: Big(100),
-            FTX_SIZE_DIFF_THRESHOLD: Big(0.1),
+            PERPFI_MIN_TRADE_NOTIONAL: Big(10),
+            FTX_MIN_TRADE_SIZE: Big(0.1),
         },
     }
 
@@ -340,7 +340,7 @@ export class Arbitrageur {
                 },
             })
     
-            if (ftxSizeDiff.abs().gte(ammConfig.FTX_SIZE_DIFF_THRESHOLD)) {
+            if (ftxSizeDiff.abs().gte(ammConfig.FTX_MIN_TRADE_SIZE)) {
                 let side = null
                 if (ftxPositionSize.gte(Big(0))) {
                     // FTX owns long positions
