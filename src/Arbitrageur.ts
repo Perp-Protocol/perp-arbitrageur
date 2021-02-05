@@ -411,7 +411,7 @@ export class Arbitrageur {
         })
 
         // Open positions if needed
-        if (position.size.gte(0) && spread.lt(ammConfig.PERPFI_LONG_ENTRY_TRIGGER)) {
+        if (spread.lt(ammConfig.PERPFI_LONG_ENTRY_TRIGGER)) {
             const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.BUY)
             const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
             if (ftxPositionSizeAbs.eq(Big(0))) {
@@ -422,7 +422,7 @@ export class Arbitrageur {
                 this.openFTXPosition(ammConfig.FTX_MARKET_ID, ftxPositionSizeAbs, Side.SELL),
                 this.openPerpFiPosition(amm, priceFeedKey, regAmount.div(this.PERP_LEVERAGE), Side.BUY),
             ])
-        } else if (position.size.lte(0) && spread.gt(ammConfig.PERPFI_SHORT_ENTRY_TRIGGER)) {
+        } else if (spread.gt(ammConfig.PERPFI_SHORT_ENTRY_TRIGGER)) {
             const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.SELL)
             const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
             if (ftxPositionSizeAbs.eq(Big(0))) {
@@ -432,30 +432,6 @@ export class Arbitrageur {
             await Promise.all([
                 this.openFTXPosition(ammConfig.FTX_MARKET_ID, ftxPositionSizeAbs, Side.BUY),
                 this.openPerpFiPosition(amm, priceFeedKey, regAmount.div(this.PERP_LEVERAGE), Side.SELL),
-            ])
-        }
-        // Open reversed positions if needed. Don't need to refetch the position again because the position won't be reduced.
-        else if (position.size.gt(0) && spread.gt(ammConfig.PERPFI_SHORT_ENTRY_TRIGGER)) {
-            const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.SELL)
-            const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
-            if (ftxPositionSizeAbs.eq(Big(0))) {
-                return
-            }
-
-            await Promise.all([
-                this.openFTXPosition(ammConfig.FTX_MARKET_ID, ftxPositionSizeAbs, Side.BUY),
-                this.openPerpFiPosition(amm, priceFeedKey, regAmount.div(this.PERP_LEVERAGE), Side.SELL),
-            ])
-        } else if (position.size.lt(0) && spread.lt(ammConfig.PERPFI_LONG_ENTRY_TRIGGER)) {
-            const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.BUY)
-            const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
-            if (ftxPositionSizeAbs.eq(Big(0))) {
-                return
-            }
-
-            await Promise.all([
-                this.openFTXPosition(ammConfig.FTX_MARKET_ID, ftxPositionSizeAbs, Side.SELL),
-                this.openPerpFiPosition(amm, priceFeedKey, regAmount.div(this.PERP_LEVERAGE), Side.BUY),
             ])
         } else {
             this.log.jinfo({
