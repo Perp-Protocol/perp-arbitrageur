@@ -453,23 +453,22 @@ export class Arbitrageur {
         let maxOpenNotional = Big(0)
 
         // asset cap >> 1000
-        // perpfi position + >> 500
-        // perpfi short - >> 1500 maximum
-        // max_opennotional = opennotional + asset_cap
+        // you have long position notional >> 900
+        // you can short >> 1900 maximum
         if (position.size.gte(0) && side == Side.SELL) {
-            maxOpenNotional = position.openNotional.add(ammConfig.ASSET_CAP)
+            maxOpenNotional = ammConfig.ASSET_CAP.add(position.openNotional)
         }
 
-        // perpfi position -
-        // perpfi long it
-        // max_opennotional = opennotional + asset_cap
+        // asset cap >> 1000
+        // you have short position notional >> 900
+        // you can long >> 1900 maximum
         else if (position.size.lte(0) && side == Side.BUY) {
-            maxOpenNotional = position.openNotional.add(ammConfig.ASSET_CAP)
+            maxOpenNotional = ammConfig.ASSET_CAP.add(position.openNotional)
         }
 
-        // perpfi position +
-        // perpfi long it
-        // max_opennotional = asset_cap - opennotional
+        // asset cap >> 1000
+        // you have long position notional >> 900
+        // you can long >> 100 maximum
         else if (position.size.gte(0) && side == Side.BUY) {
             maxOpenNotional = ammConfig.ASSET_CAP.sub(position.openNotional)
             if (maxOpenNotional.lt(0)) {
@@ -477,9 +476,9 @@ export class Arbitrageur {
             }
         }
 
-        // perpfi position -
-        // perpfi short it
-        // max_opennotional = asset_cap - opennotional
+        // asset cap >> 1000
+        // you have short position notional >> 900
+        // you can short >> 100 maximum
         else if (position.size.lte(0) && side == Side.SELL) {
             maxOpenNotional = ammConfig.ASSET_CAP.sub(position.openNotional)
             if (maxOpenNotional.lt(0)) {
