@@ -16,6 +16,11 @@ export class ServerProfile {
         this.ftxApiKey = process.env.FTX_API_KEY!
         this.ftxApiSecret = process.env.FTX_API_SECRET!
 
-        this.log.info(`Web3Endpoint: ${this.web3Endpoint}`)
+        this.log.jinfo({
+            event: "ServerProfile",
+            params: {
+                web3Endpoint: this.web3Endpoint,
+            }
+        })
     }
 }
