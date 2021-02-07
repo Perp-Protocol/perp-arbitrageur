@@ -49,6 +49,14 @@ export class FtxService {
         }
     }
 
+    async getTotalPnls(ftxClient: any): Promise<Record<string, number>> {
+        const data = await ftxClient.request({
+            method: "GET",
+            path: "/pnl/historical_changes",
+        })
+        return data.result.totalPnl
+    }
+    
     async getPositions(ftxClient: any): Promise<Record<string, Position>> {
         const data = await ftxClient.request({
             method: "GET",

@@ -135,6 +135,17 @@ export class Arbitrageur {
         // Fetch FTX owned positions
         this.ftxPositionsMap = await this.ftxService.getPositions(this.ftxClient)
 
+        const ftxTotalPnlMaps = await this.ftxService.getTotalPnls(this.ftxClient)
+        for (const marketKey in ftxTotalPnlMaps) {
+            this.log.jinfo({
+                event: "FtxPnL",
+                params: {
+                    marketKey,
+                    pnl: ftxTotalPnlMaps[marketKey],
+                },
+            })
+        }
+        
         // Check all Amms
         const systemMetadata = await this.systemMetadataFactory.fetch()
         const amms = await this.perpService.getAllOpenAmms()
