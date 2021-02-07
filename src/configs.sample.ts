@@ -15,6 +15,7 @@ export interface AmmConfig {
     PERPFI_MIN_TRADE_NOTIONAL: Big
     PERPFI_SHORT_ENTRY_TRIGGER: Big
     PERPFI_LONG_ENTRY_TRIGGER: Big
+    ADJUST_MARGIN_RATIO_THRESHOLD: Big
     MAX_SLIPPAGE_RATIO: Big
     FTX_MARKET_ID: string
     FTX_MIN_TRADE_SIZE: Big
@@ -28,6 +29,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
+        ADJUST_MARGIN_RATIO_THRESHOLD: Big(10).div(100),
         MAX_SLIPPAGE_RATIO: Big(0.0001),
         FTX_MARKET_ID: "BTC-PERP",
         FTX_MIN_TRADE_SIZE: Big(0.001),
@@ -39,6 +41,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
+        ADJUST_MARGIN_RATIO_THRESHOLD: Big(10).div(100),
         MAX_SLIPPAGE_RATIO: Big(0.0001),
         FTX_MARKET_ID: "ETH-PERP",
         FTX_MIN_TRADE_SIZE: Big(0.001),
@@ -50,6 +53,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
+        ADJUST_MARGIN_RATIO_THRESHOLD: Big(10).div(100),
         MAX_SLIPPAGE_RATIO: Big(0.0001),
         FTX_MARKET_ID: "YFI-PERP",
         FTX_MIN_TRADE_SIZE: Big(0.001),
@@ -61,6 +65,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
+        ADJUST_MARGIN_RATIO_THRESHOLD: Big(10).div(100),
         MAX_SLIPPAGE_RATIO: Big(0.0001),
         FTX_MARKET_ID: "DOT-PERP",
         FTX_MIN_TRADE_SIZE: Big(0.1),
@@ -72,6 +77,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
+        ADJUST_MARGIN_RATIO_THRESHOLD: Big(10).div(100),
         MAX_SLIPPAGE_RATIO: Big(0.0001),
         FTX_MARKET_ID: "SNX-PERP",
         FTX_MIN_TRADE_SIZE: Big(0.1),

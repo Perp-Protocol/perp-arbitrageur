@@ -316,6 +316,86 @@ export class Arbitrageur {
             }
         }
 
+        // Adjust PERP margin
+        if (!position.size.eq(0)) {
+            const marginRatio = await this.perpService.getMarginRatio(amm.address, arbitrageurAddr)
+            this.log.jinfo({
+                event: "MarginRatioBefore",
+                params: { marginRatio: marginRatio.toFixed(), baseAssetSymbol: priceFeedKey },
+            })
+            const expectedMarginRatio = new Big(1).div(ammConfig.PERPFI_LEVERAGE)
+            if (marginRatio.gt(expectedMarginRatio.mul(new Big(1).add(ammConfig.ADJUST_MARGIN_RATIO_THRESHOLD)))) {
+                let marginToBeRemoved = marginRatio.sub(expectedMarginRatio).mul(position.openNotional)
+
+                // cap the reduction by the current (funding payment realized) margin
+                if (marginToBeRemoved.gt(position.margin)) {
+                    marginToBeRemoved = position.margin
+                }
+                if (marginToBeRemoved.gt(Big(0))) {
+                    this.log.jinfo({
+                        event: "RemoveMargin",
+                        params: {
+                            marginToBeRemoved: +marginToBeRemoved,
+                            baseAssetSymbol: priceFeedKey,
+                        },
+                    })
+
+                    const release = await this.nonceMutex.acquire()
+                    let tx
+                    try {
+                        tx = await this.perpService.removeMargin(this.arbitrageur, amm.address, marginToBeRemoved, {
+                            nonce: this.nextNonce,
+                            gasPrice: await this.ethService.getSafeGasPrice(),
+                        })
+                        this.nextNonce++
+                    } finally {
+                        release()
+                    }
+                    await tx.wait()
+                    this.log.jinfo({
+                        event: "MarginRatioAfter",
+                        params: {
+                            marginRatio: (
+                                await this.perpService.getMarginRatio(amm.address, arbitrageurAddr)
+                            ).toFixed(),
+                            baseAssetSymbol: priceFeedKey,
+                        },
+                    })
+                }
+            } else if (
+                marginRatio.lt(expectedMarginRatio.mul(new Big(1).sub(ammConfig.ADJUST_MARGIN_RATIO_THRESHOLD)))
+            ) {
+                // marginToBeAdded = marginToChange
+                //                 = (expectedMarginRatio - marginRatio) * openNotional
+                let marginToBeAdded = expectedMarginRatio.sub(marginRatio).mul(position.openNotional)
+                marginToBeAdded = marginToBeAdded.gt(quoteBalance) ? quoteBalance : marginToBeAdded
+                this.log.jinfo({
+                    event: "AddMargin",
+                    params: { marginToBeAdded: marginToBeAdded.toFixed(), baseAssetSymbol: priceFeedKey },
+                })
+
+                const release = await this.nonceMutex.acquire()
+                let tx
+                try {
+                    tx = await this.perpService.addMargin(this.arbitrageur, amm.address, marginToBeAdded, {
+                        nonce: this.nextNonce,
+                        gasPrice: await this.ethService.getSafeGasPrice(),
+                    })
+                    this.nextNonce++
+                } finally {
+                    release()
+                }
+                await tx.wait()
+                this.log.jinfo({
+                    event: "MarginRatioAfter",
+                    params: {
+                        marginRatio: (await this.perpService.getMarginRatio(amm.address, arbitrageurAddr)).toFixed(),
+                        baseAssetSymbol: priceFeedKey,
+                    },
+                })
+            }
+        }
+
         // NOTE If the arbitrageur is already imbalanced,
         // we will leave it as is and not do any rebalance work
 
