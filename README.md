@@ -1,4 +1,9 @@
 # perp-arbitrageur
+This strategy is doing "buy low, sell high" to make profit between two different exchanges. For example, most of the time, the price of ETH-PERP at Perp exchange and FTX will be similar. However, due to the price movement, the difference may be larger. As a result, we could do the arbitrage to open positions when the price difference (spread) is greater than normal, and to close the positions when the spread is back to normal. 
+
+For example, when the ETH-perp at Perp exchange is 1500, and 1520 at FTX. Then, we could long ETH-perp at Perp exchange, and short at FTX. After few moments later, the price at Perp exchange increases to 1550, and the price at FTX increases to 1555, we short at Perp exchange and long at FTX to close the positions at both exchanges. The PnL will be +50 at Perp exchange, -35 at FTX, and total is  +15. 
+
+Note that there are many parameters you can adjust based on your knowledge and own risks such as leverage, trigger conditions, exit condition...etc, and this code is only for tutorial and example.  
 
 ## Installation
 
