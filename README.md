@@ -1,9 +1,9 @@
 # perp-arbitrageur
-This strategy is doing "buy low, sell high" to make profit between two different exchanges. For example, most of the time, the price of ETH-PERP at Perp exchange and FTX will be similar. However, due to the price movement, the difference may be larger. As a result, we could do the arbitrage to open positions when the price difference (spread) is greater than normal, and to close the positions when the spread is back to normal. 
+This strategy is doing "buy low, sell high" to make profit between two different exchanges. For example, most of the time, the price of ETH-PERP at Perp exchange and FTX will be similar. However, due to the price movement, the difference may be larger. As a result, we could do the arbitrage to open positions when the price difference (spread) is greater than normal level, and to close the positions when the spread is back to normal level. 
 
-For example, when the ETH-perp at Perp exchange is 1500, and 1520 at FTX. Then, we could long ETH-perp at Perp exchange, and short at FTX. After few moments later, the price at Perp exchange increases to 1550, and the price at FTX increases to 1555, we short at Perp exchange and long at FTX to close the positions at both exchanges. The PnL will be +50 at Perp exchange, -35 at FTX, and total is  +15. 
+For example, when the ETH-perp at Perp exchange is 1500, and 1520 at FTX. Then, we could long ETH-perp at Perp exchange, and short at FTX. A few moment later, the price at Perp exchange increases to 1550, and the price at FTX increases to 1555, we short ETH-perp at Perp exchange and long it at FTX to close the positions at both exchanges. The PnL will be +50 at Perp exchange, -35 at FTX, and total is  +15. 
 
-Note that there are many parameters you can adjust based on your knowledge and own risks such as leverage, trigger conditions, exit condition...etc, and this code is only for tutorial and example.  
+Note that there are many parameters you can adjust based on your knowledge and own risk such as leverage, trigger conditions, exit condition...etc, and this code is only for tutorial and example. 
 
 ## Installation
 
@@ -35,20 +35,20 @@ export const preflightCheck = {
     XDAI_BALANCE_THRESHOLD: Big(1),
     USDC_BALANCE_THRESHOLD: Big(100),
     FTX_USD_BALANCE_THRESHOLD: Big(100),
-    FTX_MARGIN_RATIO_THRESHOLD: Big(0.1), // 10%
+    FTX_MARGIN_RATIO_THRESHOLD: Big(0.1), 
 }
 
 export const ammConfigMap = {
     "BTC-USDC": {
-        ENABLED: true,
-        ASSET_CAP: Big(1000),
-        PERPFI_LEVERAGE: Big(5),
-        PERPFI_MIN_TRADE_NOTIONAL: Big(10),
-        PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
-        PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
-        MAX_SLIPPAGE_RATIO: Big(0.0001),
+        ENABLED: true, // "true to enable it, "false" to disable it
+        ASSET_CAP: Big(1000), // You may adjust it based on your own risk.
+        PERPFI_LEVERAGE: Big(2), // You may adjust it based on your own risk.
+        PERPFI_MIN_TRADE_NOTIONAL: Big(10), 
+        PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100), // open the short position at Perp exchange when the spread is >= 0.5 % 
+        PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100), // open the long position at Perp excahnge when the spread is =< -0.5%
+        MAX_SLIPPAGE_RATIO: Big(0.001), // set the max slippage ratio limit to avoid large slippage 
         FTX_MARKET_ID: "BTC-PERP",
-        FTX_MIN_TRADE_SIZE: Big(0.001),
+        FTX_MIN_TRADE_SIZE: Big(0.001), 
     },
     ...
 }
