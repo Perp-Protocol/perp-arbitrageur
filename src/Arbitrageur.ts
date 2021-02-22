@@ -9,7 +9,7 @@ import { Log } from "./Log"
 import { MaxUint256 } from "@ethersproject/constants"
 import { Mutex } from "async-mutex"
 import { parseBytes32String } from "@ethersproject/strings"
-import { PerpService, Side, Position } from "./PerpService"
+import { PerpService, Side, Position, PnlCalcOption } from "./PerpService"
 import { preflightCheck, ammConfigMap, AmmConfig } from "./configs"
 import { ServerProfile } from "./ServerProfile"
 import { Service } from "typedi"
@@ -263,6 +263,18 @@ export class Arbitrageur {
                 size: +perpfiPositionSize,
                 margin: +position.margin,
                 openNotional: +position.openNotional,
+            },
+        })
+
+        const unrealizedPnl = await this.perpService.getUnrealizedPnl(amm.address, this.arbitrageur.address, PnlCalcOption.SPOT_PRICE)
+        const pnl = position.margin.add(unrealizedPnl)
+        this.log.jinfo({
+            event: "PerpFiPnL",
+            params: {
+                priceFeedKey,
+                margin: +position.margin,
+                unrealizedPnl: +unrealizedPnl,
+                pnl: +pnl,
             },
         })
 

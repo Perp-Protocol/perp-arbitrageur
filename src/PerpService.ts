@@ -21,6 +21,11 @@ export enum Side {
     SELL,
 }
 
+export enum PnlCalcOption {
+    SPOT_PRICE,
+    TWAP,
+}
+
 export interface Decimal {
     d: BigNumber
 }
@@ -297,6 +302,12 @@ export class PerpService {
             },
         })
         return tx
+    }
+
+    async getUnrealizedPnl(ammAddr: string, traderAddr: string, pnlCalOption: PnlCalcOption): Promise<Big> {
+        const clearingHouseViewer = await this.createClearingHouseViewer()
+        const unrealizedPnl = (await clearingHouseViewer.functions.getUnrealizedPnl(ammAddr, traderAddr, BigNumber.from(pnlCalOption)))[0]
+        return Big(PerpService.fromWei(unrealizedPnl.d))
     }
 
     // noinspection JSMethodCanBeStatic
