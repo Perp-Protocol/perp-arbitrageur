@@ -217,7 +217,7 @@ export class PerpService {
         ammAddr: string,
         minBaseAssetAmount: Big = Big(0),
         overrides?: Overrides,
-    ): Promise<void> {
+    ): Promise<TransactionResponse> {
         const clearingHouse = await this.createClearingHouse(trader)
         const tx = await clearingHouse.functions.closePosition(
             ammAddr,
@@ -227,8 +227,18 @@ export class PerpService {
                 ...overrides,
             },
         )
-        const receipt = await tx.wait()
-        if (receipt.status !== 1) throw new Error(`closePositionError:${tx.hash}`)
+        this.log.jinfo({
+            event: "ClosePositionTxSent",
+            params: {
+                trader: trader.address,
+                amm: ammAddr,
+                txHash: tx.hash,
+                gasPrice: tx.gasPrice.toString(),
+                nonce: tx.nonce,
+            },
+        })
+
+        return tx
     }
 
     async removeMargin(
