@@ -3,7 +3,7 @@ This strategy is doing "buy low, sell high" to make profit between two different
 
 For example, when the ETH-perp at Perp exchange is 1500, and 1520 at FTX. Then, we could long ETH-perp at Perp exchange, and short at FTX. A few moment later, the price at Perp exchange increases to 1550, and the price at FTX increases to 1555, we short ETH-perp at Perp exchange and long it at FTX to close the positions at both exchanges. The PnL will be +50 at Perp exchange, -35 at FTX, and total is  +15. 
 
-Note that there are many parameters you can adjust based on your knowledge and own risk such as leverage, trigger conditions, exit condition...etc, and this code is only for tutorial and example. 
+By adjusting the long & short enter trigger of the spread, you may easily do the arbitrage! Please review the definition of each parameters in the code carefully. Note that there are many parameters you can adjust based on your knowledge and own risk such as leverage, trigger conditions, exit condition...etc, and this code is only for tutorial and example. 
 
 ## Installation
 
