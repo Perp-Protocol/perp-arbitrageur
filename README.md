@@ -1,9 +1,14 @@
 # perp-arbitrageur
-This strategy is doing "buy low, sell high" to make profit between two different exchanges. For example, most of the time, the price of ETH-PERP at Perp exchange and FTX will be similar. However, due to the price movement, the difference may be larger. As a result, we could do the arbitrage to open positions when the price difference (spread) is greater than normal level, and to close the positions when the spread is back to normal level. 
+The `perp-arbitrageur` is an arbitrage bot that can be run on AWS Lambda (works with free tier) or locally. The bot allows you to execute automated trading strategies between Perpetual Protocol ([site](https://perp.fi/), [docs](https://docs.perp.fi/)) and FTX ([site](https://ftx.com/)).
 
-For example, when the ETH-perp at Perp exchange is 1500, and 1520 at FTX. Then, we could long ETH-perp at Perp exchange, and short at FTX. A few moment later, the price at Perp exchange increases to 1550, and the price at FTX increases to 1555, we short ETH-perp at Perp exchange and long it at FTX to close the positions at both exchanges. The PnL will be +50 at Perp exchange, -35 at FTX, and total is  +15. 
+# Default Strategy
+The default strategy is to "buy low, sell high" to make profit between two different exchanges. For example, most of the time, the price of ETH-PERP at Perpetual Protocol and FTX will be similar. However, price action on the exchanges leads to price differentials from time to time. This bot is designed to open positions when the price difference (spread) is greater than a set level, and to close the positions when the spread decreases below a set level. 
 
-By adjusting the long & short enter trigger of the spread, you may easily do the arbitrage! Please review the definition of each parameters in the code carefully. Note that there are many parameters you can adjust based on your knowledge and own risk such as leverage, trigger conditions, exit condition...etc, and this code is only for tutorial and example. 
+For example, when the ETH-perp on Perpetual Protocol is 1500, and 1520 at FTX, we could long ETH-perp at Perp exchange, and short at FTX in the expectation that some time later the prices will converge. Let's say the price at Perpetual Protocol increases to 1550, and the price at FTX increases to 1555. The bot will sell the positions at both exchanges. The PnL in this example will be +50 USD on Perpetual Protocol, and -35 USD at FTX, for a total of +15 USD. 
+
+After some setup, by adjusting `PERPFI_SHORT_ENTRY_TRIGGER` and `PERPFI_LONG_ENTRY_TRIGGER`, you can easily do arbitrage between Perptual Protocol and FTX. Please review the definitions of each parameter in the code carefully. Note that there are many parameters you can adjust based on your knowledge and own risk such as leverage, trigger conditions, exit conditions, etc. 
+# Note
+This code is provided only for educational purposes only. Derivatives trading carries substantial risks and possible loss of up to 100% of your funds. Perpetual contract trading may be regulated in your jurisdiction. Be sure to check local laws before trading.
 
 
 ## Installation
@@ -21,11 +26,12 @@ $ cp src/configs.sample.ts src/configs.ts
 Provide your private keys in `.env.production`:
 
 ```bash
+# Wallet address used for perp.exchange
 # The private key must start with "0x"
 ARBITRAGEUR_PK=YOUR_WALLET_PRIVATE_KEY
 
 # FTX API keys
-# They can be obtained by going to FTX Settings > API Keys > "Create API key for bot"
+# These can be obtained by going to FTX Settings > API Keys > "Create API key for bot"
 FTX_API_KEY=YOUR_FTX_API_KEY
 FTX_API_SECRET=YOUR_FTX_API_SECRET
 ```
@@ -34,7 +40,7 @@ Edit the trading parameters in `src/configs.ts`:
 
 ```ts
 export const preflightCheck = {
-    BLOCK_TIMESTAMP_FRESHNESS_THRESHOLD: 60 * 30, // 30 minutes
+    BLOCK_TIMESTAMP_FRESHNESS_THRESHOLD: 60 * 30, // default 30 minutes
     XDAI_BALANCE_THRESHOLD: Big(1),
     USDC_BALANCE_THRESHOLD: Big(100),
     FTX_USD_BALANCE_THRESHOLD: Big(100),
