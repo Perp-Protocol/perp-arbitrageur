@@ -21,7 +21,7 @@ import FTXRest from "ftx-api-rest"
 export class Arbitrageur {
     private readonly log = Log.getLogger(Arbitrageur.name)
     private readonly nonceMutex = new Mutex()
-    private readonly perpfiFee = Big(0.001) // 0.1%
+    private readonly perpfiFee = Big(0.001) // default 0.1%
     private readonly arbitrageur: Wallet
     private readonly ftxClient: any
 
@@ -68,7 +68,7 @@ export class Arbitrageur {
         })
 
         await this.arbitrage()
-        setInterval(async () => await this.arbitrage(), 1000 * 60 * 1) // 1 minute
+        setInterval(async () => await this.arbitrage(), 1000 * 60 * 1) // default 1 minute
     }
 
     async checkBlockFreshness(): Promise<void> {
@@ -89,7 +89,7 @@ export class Arbitrageur {
     async arbitrage(): Promise<void> {
         await this.checkBlockFreshness()
 
-        // Check xDai balance
+        // Check xDai balance - needed for gas payments
         const xDaiBalance = await this.ethService.getBalance(this.arbitrageur.address)
         this.log.jinfo({
             event: "xDaiBalance",
@@ -132,7 +132,7 @@ export class Arbitrageur {
             return
         }
 
-        // Fetch FTX owned positions
+        // Fetch FTX open positions
         this.ftxPositionsMap = await this.ftxService.getPositions(this.ftxClient)
 
         const ftxTotalPnlMaps = await this.ftxService.getTotalPnls(this.ftxClient)
@@ -146,7 +146,7 @@ export class Arbitrageur {
             })
         }
         
-        // Check all Amms
+        // Check all Perpetual Protocol AMMs
         const systemMetadata = await this.systemMetadataFactory.fetch()
         const amms = await this.perpService.getAllOpenAmms()
 
@@ -208,7 +208,7 @@ export class Arbitrageur {
         const clearingHouseAddr = systemMetadata.clearingHouseAddr
         const quoteAssetAddr = await amm.quoteAsset()
 
-        // Check PERP balance
+        // Check Perpetual Protocol balance - quote asset is USDC
         const quoteBalance = await this.erc20Service.balanceOf(quoteAssetAddr, arbitrageurAddr)
         if (quoteBalance.lt(preflightCheck.USDC_BALANCE_THRESHOLD)) {
             this.log.jwarn({
@@ -237,7 +237,7 @@ export class Arbitrageur {
             })
         }
 
-        // List PERP AMM's properties
+        // List Perpetual Protocol AMM's properties
         const priceFeedKey = parseBytes32String(await amm.priceFeedKey())
         const ammProps = await this.perpService.getAmmStates(amm.address)
         const ammPrice = ammProps.quoteAssetReserve.div(ammProps.baseAssetReserve)
@@ -252,7 +252,7 @@ export class Arbitrageur {
             },
         })
 
-        // List PERP position
+        // List Perpetual Protocol positions
         const position = await this.perpService.getPersonalPositionWithFundingPayment(amm.address, this.arbitrageur.address)
         const perpfiPositionSize = position.size
         this.log.jinfo({
@@ -278,7 +278,7 @@ export class Arbitrageur {
             },
         })
 
-        // List FTX position
+        // List FTX positions
         const ftxPosition = this.ftxPositionsMap[ammConfig.FTX_MARKET_ID]
         if (ftxPosition) {
             const ftxPositionSize = ftxPosition.netSize
@@ -328,7 +328,7 @@ export class Arbitrageur {
             }
         }
 
-        // Adjust PERP margin
+        // Adjust Perpetual Protocol margin
         if (!position.size.eq(0)) {
             const marginRatio = await this.perpService.getMarginRatio(amm.address, arbitrageurAddr)
             this.log.jinfo({
@@ -408,7 +408,7 @@ export class Arbitrageur {
             }
         }
 
-        // NOTE If the arbitrageur is already imbalanced,
+        // NOTE If the arbitrageur is already out of balance,
         // we will leave it as is and not do any rebalance work
 
         // Get FTX price right before calculating the spread
@@ -423,8 +423,8 @@ export class Arbitrageur {
         })
 
         // Calculate spread
-        // NOTE Note that we assume FTX liquidity is always larger than perp.fi,
-        // so we can use perp.fi to calculate the max slippage
+        // NOTE We assume FTX liquidity is always larger than Perpetual Protocol,
+        // so we use Perpetual Protocol to calculate the max slippage
         const spread = ammPrice.sub(ftxPrice).div(ftxPrice)
         const amount = Arbitrageur.calcMaxSlippageAmount(
             ammPrice,
@@ -484,6 +484,7 @@ export class Arbitrageur {
     calculateRegulatedPositionNotional(ammConfig: AmmConfig, quoteBalance: Big, maxSlippageAmount: Big, position: Position, side: Side): Big {
         let maxOpenNotional = Big(0)
 
+        // Example
         // asset cap >> 1000
         // you have long position notional >> 900
         // you can short >> 1900 maximum
@@ -491,6 +492,7 @@ export class Arbitrageur {
             maxOpenNotional = ammConfig.ASSET_CAP.add(position.openNotional)
         }
 
+        // Example
         // asset cap >> 1000
         // you have short position notional >> 900
         // you can long >> 1900 maximum
@@ -498,6 +500,7 @@ export class Arbitrageur {
             maxOpenNotional = ammConfig.ASSET_CAP.add(position.openNotional)
         }
 
+        // Example
         // asset cap >> 1000
         // you have long position notional >> 900
         // you can long >> 100 maximum
@@ -508,6 +511,7 @@ export class Arbitrageur {
             }
         }
 
+        // Example
         // asset cap >> 1000
         // you have short position notional >> 900
         // you can short >> 100 maximum
@@ -663,7 +667,7 @@ export class Arbitrageur {
         })
         await tx.wait()
 
-        // check AMM properties after
+        // check AMM properties after trade
         const ammProps = await this.perpService.getAmmStates(amm.address)
         const ammPrice = ammProps.quoteAssetReserve.div(ammProps.baseAssetReserve)
         this.log.jinfo({
