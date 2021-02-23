@@ -267,14 +267,14 @@ export class Arbitrageur {
         })
 
         const unrealizedPnl = await this.perpService.getUnrealizedPnl(amm.address, this.arbitrageur.address, PnlCalcOption.SPOT_PRICE)
-        const pnl = position.margin.add(unrealizedPnl)
         this.log.jinfo({
             event: "PerpFiPnL",
             params: {
                 priceFeedKey,
                 margin: +position.margin,
                 unrealizedPnl: +unrealizedPnl,
-                pnl: +pnl,
+                quoteBalance: +quoteBalance,
+                accountValue: +position.margin.add(unrealizedPnl).add(quoteBalance),
             },
         })
 
