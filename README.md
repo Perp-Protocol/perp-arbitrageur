@@ -21,9 +21,12 @@ $ cp src/configs.sample.ts src/configs.ts
 Provide your private keys in `.env.production`:
 
 ```bash
+# Wallet address used in perp.exchange
 # The private key must start with "0x"
 ARBITRAGEUR_PK=YOUR_WALLET_PRIVATE_KEY
 
+# FTX API keys
+# They can be obtained by going to FTX Settings > API Keys > "Create API key for bot"
 FTX_API_KEY=YOUR_FTX_API_KEY
 FTX_API_SECRET=YOUR_FTX_API_SECRET
 ```
