@@ -1,6 +1,8 @@
 # perp-arbitrageur
 The `perp-arbitrageur` is an arbitrage bot that can be run on AWS Lambda (works with free tier) or locally. The bot allows you to execute automated trading strategies between Perpetual Protocol ([site](https://perp.fi/), [docs](https://docs.perp.fi/)) and FTX ([site](https://ftx.com/)).
 
+Since Perpetual Protocol runs on xDai, you can use this bot entirely without paying gas fees on Ethereum. Gas fees on xDai are very low (1 Gwei).
+
 # Default Strategy
 The default strategy is to "buy low, sell high" to make profit between two different exchanges. For example, most of the time, the price of ETH-PERP at Perpetual Protocol and FTX will be similar. However, price action on the exchanges leads to price differentials from time to time. This bot is designed to open positions when the price difference (spread) is greater than a set level, and to close the positions when the spread decreases below a set level. 
 
@@ -67,7 +69,8 @@ Read [src/configs.sample.ts](https://github.com/perpetual-protocol/perp-arbitrag
 
 ## Deposit
 
-- Deposit enough USDC on [Perpetual Protocol Exchange](https://perp.exchange/)
+- Deposit enough USDC on [Perpetual Protocol Exchange](https://perp.exchange/) - USDC can be deposited into your wallet either via perp.exchange, or using the xDai [Omni Bridge](https://omni.xdaichain.com/)
+- Deposit xDAI in your wallet to pay for gas on xDai (note xDai gas fees are typically 1 Gwei and paid in xDAI, a USD stable coin on xDai)
 - Deposit enough USD or Stablecoins on [FTX](https://ftx.com/)
 
 ## Run
