@@ -73,7 +73,7 @@ Read [src/configs.sample.ts](https://github.com/perpetual-protocol/perp-arbitrag
 ## Deposit
 
 - Deposit xUSDC for trading on [Perpetual Protocol Exchange](https://perp.exchange/) - xUSDC can be deposited into your wallet either via perp.exchange, or using the xDai [Omni Bridge](https://omni.xdaichain.com/). xUSDC is the USDC token that has been transfered to xDai.
-- Deposit xDAI in your wallet to pay for gas on xDai (note xDai gas fees are typically 1 Gwei and paid in xDAI, DAI tokens that have been transfered to xDai.)
+- Deposit [xDAI](https://www.xdaichain.com/for-users/get-xdai-tokens) in your wallet to pay for gas on xDai (note xDai gas fees are typically 1 Gwei and paid in xDAI, DAI tokens that have been transfered to xDai.)
 - Deposit enough USD or appropriate stablecoins on [FTX](https://ftx.com/)
 
 ## Run
