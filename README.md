@@ -32,7 +32,6 @@ $ cp src/configs.sample.ts src/configs.ts
 Provide your private keys in `.env.production`:
 
 ```bash
-# Wallet address used for perp.exchange
 # The private key must start with "0x"
 ARBITRAGEUR_PK=YOUR_WALLET_PRIVATE_KEY
 
