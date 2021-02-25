@@ -32,7 +32,7 @@ $ cp src/configs.sample.ts src/configs.ts
 Provide your private keys in `.env.production`:
 
 ```bash
-# The private key must start with "0x"
+# The private key must start with "0x" - add it if necessary (e.g. from private key exported from Metamask)
 ARBITRAGEUR_PK=YOUR_WALLET_PRIVATE_KEY
 
 # FTX API keys
