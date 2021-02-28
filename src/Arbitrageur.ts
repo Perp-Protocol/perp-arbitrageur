@@ -237,20 +237,7 @@ export class Arbitrageur {
             })
         }
 
-        // List Perpetual Protocol AMM's properties
         const priceFeedKey = parseBytes32String(await amm.priceFeedKey())
-        const ammProps = await this.perpService.getAmmStates(amm.address)
-        const ammPrice = ammProps.quoteAssetReserve.div(ammProps.baseAssetReserve)
-        this.log.jinfo({
-            event: "AmmStatusBefore",
-            params: {
-                amm: amm.address,
-                priceFeedKey,
-                baseAssetReserve: ammProps.baseAssetReserve.toFixed(),
-                quoteAssetReserve: ammProps.quoteAssetReserve.toFixed(),
-                price: ammPrice.toFixed(),
-            },
-        })
 
         // List Perpetual Protocol positions
         const position = await this.perpService.getPersonalPositionWithFundingPayment(amm.address, this.arbitrageur.address)
@@ -411,14 +398,37 @@ export class Arbitrageur {
         // NOTE If the arbitrageur is already out of balance,
         // we will leave it as is and not do any rebalance work
 
-        // Get FTX price right before calculating the spread
-        const ftxMarket = await this.ftxService.getMarket(ammConfig.FTX_MARKET_ID)
-        const ftxPrice = ftxMarket.last!
+        // Fetch prices
+        const [ammProps, ftxPrice] = await Promise.all([
+            (async () => {
+                // Get Perpetual Protocol AMM price
+                const ammProps = await this.perpService.getAmmStates(amm.address)
+                return ammProps
+            })(),
+            (async () => {
+                // Get FTX price
+                const ftxMarket = await this.ftxService.getMarket(ammConfig.FTX_MARKET_ID)
+                const ftxPrice = ftxMarket.last!
+                this.log.jinfo({
+                    event: "FtxPrice",
+                    params: {
+                        tokenPair: ammConfig.FTX_MARKET_ID,
+                        price: ftxPrice.toFixed(),
+                    },
+                })
+                return ftxPrice
+            })()
+        ])
+
+        const ammPrice = ammProps.quoteAssetReserve.div(ammProps.baseAssetReserve)
         this.log.jinfo({
-            event: "FtxPrice",
+            event: "AmmStatusBefore",
             params: {
-                tokenPair: ammConfig.FTX_MARKET_ID,
-                price: ftxPrice.toFixed(),
+                amm: amm.address,
+                priceFeedKey,
+                price: ammPrice.toFixed(),
+                baseAssetReserve: ammProps.baseAssetReserve.toFixed(),
+                quoteAssetReserve: ammProps.quoteAssetReserve.toFixed(),
             },
         })
 
