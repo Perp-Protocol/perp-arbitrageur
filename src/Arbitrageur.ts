@@ -8,8 +8,7 @@ import { isNumber } from "lodash"
 import { Log } from "./Log"
 import { MaxUint256 } from "@ethersproject/constants"
 import { Mutex } from "async-mutex"
-import { parseBytes32String } from "@ethersproject/strings"
-import { PerpService, Side, Position, PnlCalcOption } from "./PerpService"
+import { PerpService, Side, Position, PnlCalcOption, AmmProps } from "./PerpService"
 import { preflightCheck, ammConfigMap, AmmConfig } from "./configs"
 import { ServerProfile } from "./ServerProfile"
 import { Service } from "typedi"
@@ -27,6 +26,8 @@ export class Arbitrageur {
 
     private ftxPositionsMap!: Record<string, FTXPosition>
     private nextNonce!: number
+    private perpfiBalance = Big(0)
+    private ftxAccountValue = Big(0)
 
     constructor(
         readonly perpService: PerpService,
@@ -122,7 +123,7 @@ export class Arbitrageur {
         const ftxMarginRatio = ftxAccountInfo.marginFraction
         this.log.jinfo({
             event: "FtxMarginRatio",
-            params: { balftxMarginRatioance: ftxMarginRatio.toFixed() },
+            params: { ftxMarginRatio: ftxMarginRatio.toFixed() },
         })
         if (!ftxMarginRatio.eq(0) && ftxMarginRatio.lt(preflightCheck.FTX_MARGIN_RATIO_THRESHOLD)) {
             this.log.jerror({
@@ -132,10 +133,12 @@ export class Arbitrageur {
             return
         }
 
+        this.ftxAccountValue = ftxAccountInfo.totalAccountValue
+
         // Fetch FTX open positions
         this.ftxPositionsMap = await this.ftxService.getPositions(this.ftxClient)
 
-        const ftxTotalPnlMaps = await this.ftxService.getTotalPnls(this.ftxClient)
+        const ftxTotalPnlMaps = await this.ftxService.getTotalPnLs(this.ftxClient)
         for (const marketKey in ftxTotalPnlMaps) {
             this.log.jinfo({
                 event: "FtxPnL",
@@ -145,7 +148,7 @@ export class Arbitrageur {
                 },
             })
         }
-        
+
         // Check all Perpetual Protocol AMMs
         const systemMetadata = await this.systemMetadataFactory.fetch()
         const amms = await this.perpService.getAllOpenAmms()
@@ -166,10 +169,13 @@ export class Arbitrageur {
                 }
             }),
         )
+
+        await this.calculateTotalValue(amms)
     }
 
     async arbitrageAmm(amm: Amm, systemMetadata: EthMetadata): Promise<void> {
-        const ammPair = await this.getAmmPair(amm.address)
+        const ammState = await this.perpService.getAmmStates(amm.address)
+        const ammPair = this.getAmmPair(ammState)
         const ammConfig = ammConfigMap[ammPair]
 
         if (!ammConfig) {
@@ -219,6 +225,8 @@ export class Arbitrageur {
             // the arbitrageur will go. If it's the opposite then it doesn't need more quote asset to execute
         }
 
+        this.perpfiBalance = quoteBalance
+
         // Make sure the quote asset are approved
         const allowance = await this.erc20Service.allowance(quoteAssetAddr, arbitrageurAddr, clearingHouseAddr)
         const infiniteAllowance = await this.erc20Service.fromScaled(quoteAssetAddr, MaxUint256)
@@ -237,27 +245,26 @@ export class Arbitrageur {
             })
         }
 
-        const priceFeedKey = parseBytes32String(await amm.priceFeedKey())
-
         // List Perpetual Protocol positions
-        const position = await this.perpService.getPersonalPositionWithFundingPayment(amm.address, this.arbitrageur.address)
-        const perpfiPositionSize = position.size
+        const [position, unrealizedPnl] = await Promise.all([
+            this.perpService.getPersonalPositionWithFundingPayment(amm.address, this.arbitrageur.address),
+            this.perpService.getUnrealizedPnl(amm.address, this.arbitrageur.address, PnlCalcOption.SPOT_PRICE),
+        ])
+
         this.log.jinfo({
             event: "PerpFiPosition",
             params: {
-                amm: amm.address,
-                priceFeedKey,
-                size: +perpfiPositionSize,
+                ammPair,
+                size: +position.size,
                 margin: +position.margin,
                 openNotional: +position.openNotional,
             },
         })
 
-        const unrealizedPnl = await this.perpService.getUnrealizedPnl(amm.address, this.arbitrageur.address, PnlCalcOption.SPOT_PRICE)
         this.log.jinfo({
             event: "PerpFiPnL",
             params: {
-                priceFeedKey,
+                ammPair,
                 margin: +position.margin,
                 unrealizedPnl: +unrealizedPnl,
                 quoteBalance: +quoteBalance,
@@ -269,7 +276,7 @@ export class Arbitrageur {
         const ftxPosition = this.ftxPositionsMap[ammConfig.FTX_MARKET_ID]
         if (ftxPosition) {
             const ftxPositionSize = ftxPosition.netSize
-            const ftxSizeDiff = ftxPositionSize.abs().sub(perpfiPositionSize.abs())
+            const ftxSizeDiff = ftxPositionSize.abs().sub(position.size.abs())
             this.log.jinfo({
                 event: "FtxPosition",
                 params: {
@@ -304,7 +311,7 @@ export class Arbitrageur {
                     this.log.jinfo({
                         event: "MitigateFTXPositionSizeDiff",
                         params: {
-                            perpfiPositionSize,
+                            perpfiPositionSize: position.size,
                             ftxPositionSize,
                             ftxSizeDiff,
                             side,
@@ -320,7 +327,10 @@ export class Arbitrageur {
             const marginRatio = await this.perpService.getMarginRatio(amm.address, arbitrageurAddr)
             this.log.jinfo({
                 event: "MarginRatioBefore",
-                params: { marginRatio: marginRatio.toFixed(), baseAssetSymbol: priceFeedKey },
+                params: {
+                    ammPair,
+                    marginRatio: marginRatio.toFixed(),
+                },
             })
             const expectedMarginRatio = new Big(1).div(ammConfig.PERPFI_LEVERAGE)
             if (marginRatio.gt(expectedMarginRatio.mul(new Big(1).add(ammConfig.ADJUST_MARGIN_RATIO_THRESHOLD)))) {
@@ -334,8 +344,8 @@ export class Arbitrageur {
                     this.log.jinfo({
                         event: "RemoveMargin",
                         params: {
+                            ammPair,
                             marginToBeRemoved: +marginToBeRemoved,
-                            baseAssetSymbol: priceFeedKey,
                         },
                     })
 
@@ -354,10 +364,10 @@ export class Arbitrageur {
                     this.log.jinfo({
                         event: "MarginRatioAfter",
                         params: {
+                            ammPair,
                             marginRatio: (
                                 await this.perpService.getMarginRatio(amm.address, arbitrageurAddr)
                             ).toFixed(),
-                            baseAssetSymbol: priceFeedKey,
                         },
                     })
                 }
@@ -370,7 +380,10 @@ export class Arbitrageur {
                 marginToBeAdded = marginToBeAdded.gt(quoteBalance) ? quoteBalance : marginToBeAdded
                 this.log.jinfo({
                     event: "AddMargin",
-                    params: { marginToBeAdded: marginToBeAdded.toFixed(), baseAssetSymbol: priceFeedKey },
+                    params: {
+                        ammPair,
+                        marginToBeAdded: marginToBeAdded.toFixed(),
+                    },
                 })
 
                 const release = await this.nonceMutex.acquire()
@@ -388,8 +401,8 @@ export class Arbitrageur {
                 this.log.jinfo({
                     event: "MarginRatioAfter",
                     params: {
+                        ammPair,
                         marginRatio: (await this.perpService.getMarginRatio(amm.address, arbitrageurAddr)).toFixed(),
-                        baseAssetSymbol: priceFeedKey,
                     },
                 })
             }
@@ -399,38 +412,10 @@ export class Arbitrageur {
         // we will leave it as is and not do any rebalance work
 
         // Fetch prices
-        const [ammProps, ftxPrice] = await Promise.all([
-            (async () => {
-                // Get Perpetual Protocol AMM price
-                const ammProps = await this.perpService.getAmmStates(amm.address)
-                return ammProps
-            })(),
-            (async () => {
-                // Get FTX price
-                const ftxMarket = await this.ftxService.getMarket(ammConfig.FTX_MARKET_ID)
-                const ftxPrice = ftxMarket.last!
-                this.log.jinfo({
-                    event: "FtxPrice",
-                    params: {
-                        tokenPair: ammConfig.FTX_MARKET_ID,
-                        price: ftxPrice.toFixed(),
-                    },
-                })
-                return ftxPrice
-            })()
+        const [ammPrice, ftxPrice] = await Promise.all([
+            this.fetchAmmPrice(amm),
+            this.fetchFtxPrice(ammConfig),
         ])
-
-        const ammPrice = ammProps.quoteAssetReserve.div(ammProps.baseAssetReserve)
-        this.log.jinfo({
-            event: "AmmStatusBefore",
-            params: {
-                amm: amm.address,
-                priceFeedKey,
-                price: ammPrice.toFixed(),
-                baseAssetReserve: ammProps.baseAssetReserve.toFixed(),
-                quoteAssetReserve: ammProps.quoteAssetReserve.toFixed(),
-            },
-        })
 
         // Calculate spread
         // NOTE We assume FTX liquidity is always larger than Perpetual Protocol,
@@ -439,41 +424,41 @@ export class Arbitrageur {
         const amount = Arbitrageur.calcMaxSlippageAmount(
             ammPrice,
             ammConfig.MAX_SLIPPAGE_RATIO,
-            ammProps.baseAssetReserve,
-            ammProps.quoteAssetReserve,
+            ammState.baseAssetReserve,
+            ammState.quoteAssetReserve,
         )
 
         this.log.jinfo({
             event: "CalculatedSpread",
             params: {
+                ammPair,
                 spread: spread.toFixed(),
                 amount: amount.toFixed(),
-                baseAssetSymbol: priceFeedKey,
             },
         })
 
         // Open positions if needed
         if (spread.lt(ammConfig.PERPFI_LONG_ENTRY_TRIGGER)) {
             const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.BUY)
-            const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
+            const ftxPositionSizeAbs = this.calculateFTXPositionSize(ammConfig, regAmount, ftxPrice)
             if (ftxPositionSizeAbs.eq(Big(0))) {
                 return
             }
 
             await Promise.all([
                 this.openFTXPosition(ammConfig.FTX_MARKET_ID, ftxPositionSizeAbs, Side.SELL),
-                this.openPerpFiPosition(amm, priceFeedKey, regAmount, ammConfig.PERPFI_LEVERAGE, Side.BUY),
+                this.openPerpFiPosition(amm, ammPair, regAmount, ammConfig.PERPFI_LEVERAGE, Side.BUY),
             ])
         } else if (spread.gt(ammConfig.PERPFI_SHORT_ENTRY_TRIGGER)) {
             const regAmount = this.calculateRegulatedPositionNotional(ammConfig, quoteBalance, amount, position, Side.SELL)
-            const ftxPositionSizeAbs = this.calculateFTXpositionSize(ammConfig, regAmount, ftxPrice)
+            const ftxPositionSizeAbs = this.calculateFTXPositionSize(ammConfig, regAmount, ftxPrice)
             if (ftxPositionSizeAbs.eq(Big(0))) {
                 return
             }
 
             await Promise.all([
                 this.openFTXPosition(ammConfig.FTX_MARKET_ID, ftxPositionSizeAbs, Side.BUY),
-                this.openPerpFiPosition(amm, priceFeedKey, regAmount, ammConfig.PERPFI_LEVERAGE, Side.SELL),
+                this.openPerpFiPosition(amm, ammPair, regAmount, ammConfig.PERPFI_LEVERAGE, Side.SELL),
             ])
         } else {
             this.log.jinfo({
@@ -486,9 +471,35 @@ export class Arbitrageur {
         }
     }
 
-    async getAmmPair(ammAddr: string): Promise<string> {
-        const ammState = await this.perpService.getAmmStates(ammAddr)
+    getAmmPair(ammState: AmmProps): string {
         return `${ammState.baseAssetSymbol}-${ammState.quoteAssetSymbol}`
+    }
+
+    async fetchAmmPrice(amm: Amm): Promise<Big> {
+        const ammState = await this.perpService.getAmmStates(amm.address)
+        const ammPrice = ammState.quoteAssetReserve.div(ammState.baseAssetReserve)
+        const ammPair = this.getAmmPair(ammState)
+        this.log.jinfo({
+            event: "PerpFiPrice",
+            params: {
+                ammPair: ammPair,
+                price: ammPrice.toFixed(),
+            },
+        })
+        return ammPrice
+    }
+
+    async fetchFtxPrice(ammConfig: AmmConfig): Promise<Big> {
+        const ftxMarket = await this.ftxService.getMarket(ammConfig.FTX_MARKET_ID)
+        const ftxPrice = ftxMarket.last!
+        this.log.jinfo({
+            event: "FtxPrice",
+            params: {
+                tokenPair: ammConfig.FTX_MARKET_ID,
+                price: ftxPrice.toFixed(),
+            },
+        })
+        return ftxPrice
     }
 
     calculateRegulatedPositionNotional(ammConfig: AmmConfig, quoteBalance: Big, maxSlippageAmount: Big, position: Position, side: Side): Big {
@@ -601,7 +612,7 @@ export class Arbitrageur {
         return amount
     }
 
-    calculateFTXpositionSize(ammConfig: AmmConfig, perpFiRegulatedPositionNotional: Big, ftxPrice: Big): Big {
+    calculateFTXPositionSize(ammConfig: AmmConfig, perpFiRegulatedPositionNotional: Big, ftxPrice: Big): Big {
         let ftxPositionSizeAbs = perpFiRegulatedPositionNotional
             .div(ftxPrice)
             .abs()
@@ -638,7 +649,7 @@ export class Arbitrageur {
         return targetAmountSq.sqrt().sub(quoteAssetReserve)
     }
 
-    private async openPerpFiPosition(amm: Amm, baseAssetSymbol: string, quoteAssetAmount: Big, leverage: Big, side: Side): Promise<void> {
+    private async openPerpFiPosition(amm: Amm, ammPair: string, quoteAssetAmount: Big, leverage: Big, side: Side): Promise<void> {
         const amount = quoteAssetAmount.div(leverage)
         const gasPrice = await this.ethService.getSafeGasPrice()
 
@@ -666,8 +677,8 @@ export class Arbitrageur {
             event: "OpenPerpFiPosition",
             params: {
                 amm: amm.address,
+                ammPair,
                 side,
-                baseAssetSymbol: baseAssetSymbol,
                 quoteAssetAmount: +quoteAssetAmount,
                 leverage: leverage.toFixed(),
                 txHash: tx.hash,
@@ -676,20 +687,6 @@ export class Arbitrageur {
             },
         })
         await tx.wait()
-
-        // check AMM properties after trade
-        const ammProps = await this.perpService.getAmmStates(amm.address)
-        const ammPrice = ammProps.quoteAssetReserve.div(ammProps.baseAssetReserve)
-        this.log.jinfo({
-            event: "AmmStatusAfter",
-            params: {
-                amm: amm.address,
-                priceFeedKey: ammProps.priceFeedKey,
-                baseAssetReserve: ammProps.baseAssetReserve.toFixed(),
-                quoteAssetReserve: ammProps.quoteAssetReserve.toFixed(),
-                price: ammPrice.toFixed(),
-            },
-        })
     }
 
     private async openFTXPosition(marketId: string, positionSizeAbs: Big, side: Side): Promise<void> {
@@ -711,6 +708,23 @@ export class Arbitrageur {
         this.log.jinfo({
             event: "FtxStatusAfter",
             params: ftxPositionsAfter,
+        })
+    }
+
+    async calculateTotalValue(amms: Amm[]): Promise<void> {
+        let totalPositionValue = Big(0)
+        for (let amm of amms) {
+            const [position, unrealizedPnl] = await Promise.all([
+                this.perpService.getPersonalPositionWithFundingPayment(amm.address, this.arbitrageur.address),
+                this.perpService.getUnrealizedPnl(amm.address, this.arbitrageur.address, PnlCalcOption.SPOT_PRICE),
+            ])
+            totalPositionValue = totalPositionValue.add(position.margin).add(unrealizedPnl)
+        }
+        this.log.jwarn({
+            event: "TotalAccountValue",
+            params: {
+                totalValue: +this.perpfiBalance.add(this.ftxAccountValue).add(totalPositionValue),
+            },
         })
     }
 }
