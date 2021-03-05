@@ -195,14 +195,6 @@ export class Arbitrageur {
         }
 
         if (!ammConfig.ENABLED) {
-            this.log.jwarn({
-                event: "DisabledAmm",
-                params: {
-                    amm: amm.address,
-                    ammPair,
-                    ammConfig,
-                },
-            })
             return
         }
 
@@ -719,7 +711,7 @@ export class Arbitrageur {
             ])
             totalPositionValue = totalPositionValue.add(position.margin).add(unrealizedPnl)
         }
-        this.log.jwarn({
+        this.log.jinfo({
             event: "TotalAccountValue",
             params: {
                 totalValue: +this.perpfiBalance.add(this.ftxAccountValue).add(totalPositionValue),
