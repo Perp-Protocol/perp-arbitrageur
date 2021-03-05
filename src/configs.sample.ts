@@ -106,4 +106,16 @@ export const ammConfigMap: Record<string, AmmConfig> = {
         FTX_MARKET_ID: "AAVE-PERP",
         FTX_MIN_TRADE_SIZE: Big(0.01),
     },
+    "SUSHI-USDC": {
+        ENABLED: true,
+        ASSET_CAP: Big(1000),
+        PERPFI_LEVERAGE: Big(5),
+        PERPFI_MIN_TRADE_NOTIONAL: Big(10),
+        PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
+        PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
+        ADJUST_MARGIN_RATIO_THRESHOLD: Big(10).div(100),
+        MAX_SLIPPAGE_RATIO: Big(0.0001),
+        FTX_MARKET_ID: "SUSHI-PERP",
+        FTX_MIN_TRADE_SIZE: Big(0.5),
+    },
 }
