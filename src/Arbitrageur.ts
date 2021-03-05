@@ -3,7 +3,7 @@ import { Amm } from "../types/ethers"
 import { ERC20Service } from "./ERC20Service"
 import { EthMetadata, SystemMetadataFactory } from "./SystemMetadataFactory"
 import { EthService } from "./EthService"
-import { FtxService, Position as FTXPosition, PlaceOrderPayload } from "./FtxService"
+import { FtxService, FtxPosition, PlaceOrderPayload } from "./FtxService"
 import { isNumber } from "lodash"
 import { Log } from "./Log"
 import { MaxUint256 } from "@ethersproject/constants"
@@ -24,7 +24,7 @@ export class Arbitrageur {
     private readonly arbitrageur: Wallet
     private readonly ftxClient: any
 
-    private ftxPositionsMap!: Record<string, FTXPosition>
+    private ftxPositionsMap!: Record<string, FtxPosition>
     private nextNonce!: number
     private perpfiBalance = Big(0)
     private ftxAccountValue = Big(0)
@@ -104,8 +104,11 @@ export class Arbitrageur {
             return
         }
 
+        // Fetch FTX account info
+        const ftxAccountInfo = await this.ftxService.getAccountInfo(this.ftxClient)
+
         // Check FTX balance (USD)
-        const ftxBalance = await this.ftxService.getBalance(this.ftxClient)
+        const ftxBalance = ftxAccountInfo.freeCollateral
         this.log.jinfo({
             event: "FtxUsdBalance",
             params: { balance: ftxBalance.toFixed() },
@@ -119,7 +122,6 @@ export class Arbitrageur {
         }
 
         // Check FTX margin ratio
-        const ftxAccountInfo = await this.ftxService.getAccountInfo(this.ftxClient)
         const ftxMarginRatio = ftxAccountInfo.marginFraction
         this.log.jinfo({
             event: "FtxMarginRatio",
@@ -135,8 +137,7 @@ export class Arbitrageur {
 
         this.ftxAccountValue = ftxAccountInfo.totalAccountValue
 
-        // Fetch FTX open positions
-        this.ftxPositionsMap = await this.ftxService.getPositions(this.ftxClient)
+        this.ftxPositionsMap = ftxAccountInfo.positionsMap
 
         const ftxTotalPnlMaps = await this.ftxService.getTotalPnLs(this.ftxClient)
         for (const marketKey in ftxTotalPnlMaps) {
@@ -703,12 +704,6 @@ export class Arbitrageur {
             params: payload,
         })
         await this.ftxService.placeOrder(this.ftxClient, payload)
-
-        const ftxPositionsAfter = await this.ftxService.getPositions(this.ftxClient)
-        this.log.jinfo({
-            event: "FtxStatusAfter",
-            params: ftxPositionsAfter,
-        })
     }
 
     async calculateTotalValue(amms: Amm[]): Promise<void> {

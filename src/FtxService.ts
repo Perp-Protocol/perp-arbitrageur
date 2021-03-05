@@ -15,24 +15,6 @@ export class FtxService {
         return ftxMarket
     }
 
-    async getBalance(ftxClient: any): Promise<Big> {
-        const data = await ftxClient.request({
-            method: "GET",
-            path: "/wallet/balances",
-        })
-        this.log.jinfo({
-            event: "getBalance",
-            params: data,
-        })
-        for (let i = 0; i < data.result.length; i++) {
-            const asset = data.result[i]
-            if (asset.coin === "USD") {
-                return Big(asset.free)
-            }
-        }
-        return Big(0)
-    }
-
     async getAccountInfo(ftxClient: any): Promise<AccountInfo> {
         const data = await ftxClient.request({
             method: "GET",
@@ -42,11 +24,21 @@ export class FtxService {
             event: "GetAccountInfo",
             params: data,
         })
+
+        const positionsMap: Record<string, FtxPosition> = {}
+        for (let i = 0; i < data.result.positions.length; i++) {
+            const positionEntity = data.result.positions[i]
+            const position = this.toFtxPosition(positionEntity)
+            positionsMap[position.future] = position
+        }
+
         return {
+            freeCollateral: Big(data.result.freeCollateral),
             totalAccountValue: Big(data.result.totalAccountValue),
             // marginFraction is null if the account has no open positions
             marginFraction: Big(data.result.marginFraction ? data.result.marginFraction : 0),
             maintenanceMarginRequirement: Big(data.result.maintenanceMarginRequirement),
+            positionsMap: positionsMap,
         }
     }
 
@@ -56,30 +48,6 @@ export class FtxService {
             path: "/pnl/historical_changes",
         })
         return data.result.totalPnl
-    }
-
-    async getPositions(ftxClient: any): Promise<Record<string, Position>> {
-        const data = await ftxClient.request({
-            method: "GET",
-            path: "/positions",
-        })
-        this.log.jinfo({
-            event: "GetPositions",
-            params: data,
-        })
-        const positions: Record<string, Position> = {}
-        for (let i = 0; i < data.result.length; i++) {
-            const positionEntity = data.result[i]
-            const position: Position = {
-                future: positionEntity.future,
-                netSize: Big(positionEntity.netSize),
-                entryPrice: Big(positionEntity.entryPrice ? positionEntity.entryPrice : 0),
-                realizedPnl: Big(positionEntity.realizedPnl ? positionEntity.realizedPnl : 0),
-                cost: Big(positionEntity.cost ? positionEntity.cost : 0),
-            }
-            positions[position.future] = position
-        }
-        return positions
     }
 
     async placeOrder(ftxClient: any, payload: PlaceOrderPayload): Promise<void> {
@@ -101,15 +69,27 @@ export class FtxService {
             last: market.last ? Big(market.last) : undefined,
         }
     }
+
+    private toFtxPosition(positionEntity: any): FtxPosition {
+        return {
+            future: positionEntity.future,
+            netSize: Big(positionEntity.netSize),
+            entryPrice: Big(positionEntity.entryPrice ? positionEntity.entryPrice : 0),
+            realizedPnl: Big(positionEntity.realizedPnl ? positionEntity.realizedPnl : 0),
+            cost: Big(positionEntity.cost ? positionEntity.cost : 0),
+        }
+    }
 }
 
 export interface AccountInfo {
+    freeCollateral: Big
     totalAccountValue: Big
     marginFraction: Big
     maintenanceMarginRequirement: Big
+    positionsMap: Record<string, FtxPosition>
 }
 
-export interface Position {
+export interface FtxPosition {
     future: string
     netSize: Big // + is long and - is short
     entryPrice: Big
