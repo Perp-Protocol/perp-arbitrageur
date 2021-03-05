@@ -46,12 +46,10 @@ export class Arbitrageur {
     }
 
     async start(): Promise<void> {
-        this.nextNonce = await this.arbitrageur.getTransactionCount()
         this.log.jinfo({
             event: "Start",
             params: {
                 arbitrageur: this.arbitrageur.address,
-                nextNonce: this.nextNonce,
             },
         })
 
@@ -59,12 +57,10 @@ export class Arbitrageur {
     }
 
     async startInterval(): Promise<void> {
-        this.nextNonce = await this.arbitrageur.getTransactionCount()
         this.log.jinfo({
             event: "StartInterval",
             params: {
                 arbitrageur: this.arbitrageur.address,
-                nextNonce: this.nextNonce,
             },
         })
 
@@ -88,6 +84,14 @@ export class Arbitrageur {
     }
 
     async arbitrage(): Promise<void> {
+        this.nextNonce = await this.arbitrageur.getTransactionCount()
+        this.log.jinfo({
+            event: "NextNonce",
+            params: {
+                nextNonce: this.nextNonce,
+            },
+        })
+
         await this.checkBlockFreshness()
 
         // Check xDai balance - needed for gas payments
