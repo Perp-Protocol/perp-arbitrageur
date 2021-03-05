@@ -27,6 +27,8 @@ export class Arbitrageur {
 
     private ftxPositionsMap!: Record<string, FTXPosition>
     private nextNonce!: number
+    private perpfiBalance = Big(0)
+    private ftxAccountValue = Big(0)
 
     constructor(
         readonly perpService: PerpService,
@@ -132,10 +134,12 @@ export class Arbitrageur {
             return
         }
 
+        this.ftxAccountValue = ftxAccountInfo.totalAccountValue
+
         // Fetch FTX open positions
         this.ftxPositionsMap = await this.ftxService.getPositions(this.ftxClient)
 
-        const ftxTotalPnlMaps = await this.ftxService.getTotalPnls(this.ftxClient)
+        const ftxTotalPnlMaps = await this.ftxService.getTotalPnLs(this.ftxClient)
         for (const marketKey in ftxTotalPnlMaps) {
             this.log.jinfo({
                 event: "FtxPnL",
@@ -166,6 +170,8 @@ export class Arbitrageur {
                 }
             }),
         )
+
+        await this.calculateTotalValue(amms)
     }
 
     async arbitrageAmm(amm: Amm, systemMetadata: EthMetadata): Promise<void> {
@@ -218,6 +224,8 @@ export class Arbitrageur {
             // NOTE we don't abort prematurely here because we don't know yet which direction
             // the arbitrageur will go. If it's the opposite then it doesn't need more quote asset to execute
         }
+
+        this.perpfiBalance = quoteBalance
 
         // Make sure the quote asset are approved
         const allowance = await this.erc20Service.allowance(quoteAssetAddr, arbitrageurAddr, clearingHouseAddr)
@@ -711,6 +719,23 @@ export class Arbitrageur {
         this.log.jinfo({
             event: "FtxStatusAfter",
             params: ftxPositionsAfter,
+        })
+    }
+
+    async calculateTotalValue(amms: Amm[]): Promise<void> {
+        let totalPositionValue = Big(0)
+        for (let amm of amms) {
+            const [position, unrealizedPnl] = await Promise.all([
+                this.perpService.getPersonalPositionWithFundingPayment(amm.address, this.arbitrageur.address),
+                this.perpService.getUnrealizedPnl(amm.address, this.arbitrageur.address, PnlCalcOption.SPOT_PRICE),
+            ])
+            totalPositionValue = totalPositionValue.add(position.margin).add(unrealizedPnl)
+        }
+        this.log.jwarn({
+            event: "TotalAccountValue",
+            params: {
+                totalValue: +this.perpfiBalance.add(this.ftxAccountValue).add(totalPositionValue),
+            },
         })
     }
 }

@@ -43,20 +43,21 @@ export class FtxService {
             params: data,
         })
         return {
+            totalAccountValue: Big(data.result.totalAccountValue),
             // marginFraction is null if the account has no open positions
             marginFraction: Big(data.result.marginFraction ? data.result.marginFraction : 0),
             maintenanceMarginRequirement: Big(data.result.maintenanceMarginRequirement),
         }
     }
 
-    async getTotalPnls(ftxClient: any): Promise<Record<string, number>> {
+    async getTotalPnLs(ftxClient: any): Promise<Record<string, number>> {
         const data = await ftxClient.request({
             method: "GET",
             path: "/pnl/historical_changes",
         })
         return data.result.totalPnl
     }
-    
+
     async getPositions(ftxClient: any): Promise<Record<string, Position>> {
         const data = await ftxClient.request({
             method: "GET",
@@ -103,6 +104,7 @@ export class FtxService {
 }
 
 export interface AccountInfo {
+    totalAccountValue: Big
     marginFraction: Big
     maintenanceMarginRequirement: Big
 }
