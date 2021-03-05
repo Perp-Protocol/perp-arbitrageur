@@ -25,7 +25,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
     "BTC-USDC": {
         ENABLED: true,
         ASSET_CAP: Big(1000),
-        PERPFI_LEVERAGE: Big(5),
+        PERPFI_LEVERAGE: Big(2),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
@@ -37,7 +37,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
     "ETH-USDC": {
         ENABLED: true,
         ASSET_CAP: Big(1000),
-        PERPFI_LEVERAGE: Big(5),
+        PERPFI_LEVERAGE: Big(2),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
@@ -49,7 +49,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
     "YFI-USDC": {
         ENABLED: true,
         ASSET_CAP: Big(1000),
-        PERPFI_LEVERAGE: Big(5),
+        PERPFI_LEVERAGE: Big(2),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
@@ -61,7 +61,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
     "DOT-USDC": {
         ENABLED: true,
         ASSET_CAP: Big(1000),
-        PERPFI_LEVERAGE: Big(5),
+        PERPFI_LEVERAGE: Big(2),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
@@ -73,7 +73,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
     "SNX-USDC": {
         ENABLED: true,
         ASSET_CAP: Big(1000),
-        PERPFI_LEVERAGE: Big(5),
+        PERPFI_LEVERAGE: Big(2),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
@@ -85,7 +85,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
     "LINK-USDC": {
         ENABLED: true,
         ASSET_CAP: Big(1000),
-        PERPFI_LEVERAGE: Big(5),
+        PERPFI_LEVERAGE: Big(2),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
@@ -97,7 +97,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
     "AAVE-USDC": {
         ENABLED: true,
         ASSET_CAP: Big(1000),
-        PERPFI_LEVERAGE: Big(5),
+        PERPFI_LEVERAGE: Big(2),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
@@ -109,7 +109,7 @@ export const ammConfigMap: Record<string, AmmConfig> = {
     "SUSHI-USDC": {
         ENABLED: true,
         ASSET_CAP: Big(1000),
-        PERPFI_LEVERAGE: Big(5),
+        PERPFI_LEVERAGE: Big(2),
         PERPFI_MIN_TRADE_NOTIONAL: Big(10),
         PERPFI_SHORT_ENTRY_TRIGGER: Big(0.5).div(100),
         PERPFI_LONG_ENTRY_TRIGGER: Big(-0.5).div(100),
