@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Log } from "./Log"
 import { Service } from "typedi"
+import { Side } from "./PerpService"
 import Big from "big.js"
 import fetch from "node-fetch"
 
@@ -62,6 +63,23 @@ export class FtxService {
         })
     }
 
+    static mitigatePositionSizeDiff(perpfiPositionSize: Big, ftxPositionSize: Big): PositionSizeMitigation {
+        const ftxSizeDiff = ftxPositionSize.add(perpfiPositionSize)
+        let side = null
+        if (ftxSizeDiff.gte(Big(0))) {
+            // FTX shorts too little or longs too much
+            side = Side.SELL
+        } else {
+            // FTX shorts too much or longs too little
+            side = Side.BUY
+        }
+
+        return {
+            sizeAbs: ftxSizeDiff.abs(),
+            side,
+        }
+    }
+
     // noinspection JSMethodCanBeStatic
     private toFtxMarket(market: any): FtxMarket {
         return {
@@ -103,6 +121,11 @@ export interface PlaceOrderPayload {
     price: null
     size: number
     type: string
+}
+
+export interface PositionSizeMitigation {
+    sizeAbs: Big
+    side: Side
 }
 
 export interface FtxMarket {

@@ -272,50 +272,28 @@ export class Arbitrageur {
         // List FTX positions
         const ftxPosition = this.ftxPositionsMap[ammConfig.FTX_MARKET_ID]
         if (ftxPosition) {
-            const ftxPositionSize = ftxPosition.netSize
-            const ftxSizeDiff = ftxPositionSize.abs().sub(position.size.abs())
+            const ftxSizeDiff = ftxPosition.netSize.abs().sub(position.size.abs())
             this.log.jinfo({
                 event: "FtxPosition",
                 params: {
                     marketId: ftxPosition.future,
-                    size: +ftxPositionSize,
+                    size: +ftxPosition.netSize,
                     diff: +ftxSizeDiff,
                 },
             })
 
             if (ftxSizeDiff.abs().gte(ammConfig.FTX_MIN_TRADE_SIZE)) {
-                let side = null
-                if (ftxPositionSize.gte(Big(0))) {
-                    // FTX owns long positions
-                    if (ftxSizeDiff.gte(Big(0))) {
-                        // FTX longs too much
-                        side = Side.SELL
-                    } else {
-                        // FTX long too little
-                        side = Side.BUY
-                    }
-                } else {
-                    // FTX owns short positions
-                    if (ftxSizeDiff.gte(Big(0))) {
-                        // FTX shorts too much
-                        side = Side.BUY
-                    } else {
-                        // FTX shorts too little
-                        side = Side.SELL
-                    }
-                }
-                if (isNumber(side)) {
-                    this.log.jinfo({
-                        event: "MitigateFTXPositionSizeDiff",
-                        params: {
-                            perpfiPositionSize: position.size,
-                            ftxPositionSize,
-                            ftxSizeDiff,
-                            side,
-                        },
-                    })
-                    await this.openFTXPosition(ammConfig.FTX_MARKET_ID, ftxSizeDiff.abs(), side)
-                }
+                const mitigation = FtxService.mitigatePositionSizeDiff(position.size, ftxPosition.netSize)
+                this.log.jinfo({
+                    event: "MitigateFTXPositionSizeDiff",
+                    params: {
+                        perpfiPositionSize: position.size,
+                        ftxPositionSize: ftxPosition.netSize,
+                        size: mitigation.sizeAbs,
+                        side: mitigation.side,
+                    },
+                })
+                await this.openFTXPosition(ammConfig.FTX_MARKET_ID, mitigation.sizeAbs, mitigation.side)
             }
         }
 
