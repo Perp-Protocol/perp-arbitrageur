@@ -41,7 +41,7 @@ export class Arbitrageur {
         this.ftxClient = new FTXRest({
             key: this.serverProfile.ftxApiKey,
             secret: this.serverProfile.ftxApiSecret,
-            // subaccount: "arb", // Uncomment this line if you're using a subaccount for FTX
+            subaccount: this.serverProfile.ftxSubaccount,
         })
     }
 

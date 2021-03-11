@@ -9,12 +9,14 @@ export class ServerProfile {
     readonly arbitrageurPK: string
     readonly ftxApiKey: string
     readonly ftxApiSecret: string
+    readonly ftxSubaccount: string | undefined
 
     constructor() {
         this.web3Endpoint = process.env.WEB3_ENDPOINT!
         this.arbitrageurPK = process.env.ARBITRAGEUR_PK!
         this.ftxApiKey = process.env.FTX_API_KEY!
         this.ftxApiSecret = process.env.FTX_API_SECRET!
+        this.ftxSubaccount = process.env.FTX_SUBACCOUNT
 
         this.log.jinfo({
             event: "ServerProfile",
